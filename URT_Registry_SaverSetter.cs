@@ -129,6 +129,42 @@ namespace UniversalResourceTransferRedux
 
         public override void OnLoad(ConfigNode node)
         {
+            ConfigNode pairingsNode = node.GetNode("RECEIVER-TRANSMITTER-PAIRINGS");
+            ConfigNode transmittersNode = node.GetNode("TRANSMITTERS");
+            ConfigNode receiversNode = node.GetNode("RECEIVERS");
+
+            foreach (ConfigNode currentReceiver in pairingsNode.GetNodes("RECEIVER"))
+            {
+                ConfigNode ChildTransmittersNodes = currentReceiver.GetNode("TRANSMITTERS");
+                List<(int transmitterId, float recvPower)> transmitterConfigs = new List<(int transmitterId, float recvPower)>();
+                var receiverId = int.Parse(currentReceiver.GetValue("receiverId"));
+
+                foreach (ConfigNode currentTransmitter in ChildTransmittersNodes.GetNodes("TRANSMITTER"))
+                {
+                    var transmitterId = int.Parse(currentTransmitter.GetValue("transmitterId"));
+                    var recvPower = float.Parse(currentTransmitter.GetValue("recvPower"));
+                    transmitterConfigs.Add((transmitterId, recvPower));
+                }
+
+                receiverTransmitterPairings.Add(receiverId, transmitterConfigs);
+            }
+
+            foreach (ConfigNode currentTransmitter in transmittersNode.GetNodes("TRANSMITTER"))
+            {
+                var transmitterId = int.Parse(currentTransmitter.GetValue("transmitterId"));
+                var transmitterFlightId = uint.Parse(currentTransmitter.GetValue("transmitterPartFlightId"));
+
+                transmitters.Add(transmitterId, transmitterFlightId);
+            }
+
+            foreach (ConfigNode currentReceiver in receiversNode.GetNodes("RECEIVER"))
+            {
+                var receiverId = int.Parse(currentReceiver.GetValue("receiverId"));
+                var receiverFlightId = uint.Parse(currentReceiver.GetValue("receiverPartFlightId"));
+
+                receivers.Add(receiverId, receiverFlightId);
+            }
+            
             //TODO: Load data BEFORE protopartmodule caching
             (transmittersProtoPartModules, receiverProtoPartModules) = BuildTransmittersAndReceiversModulesLists();
         }
