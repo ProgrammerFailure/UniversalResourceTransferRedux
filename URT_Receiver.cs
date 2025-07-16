@@ -40,8 +40,9 @@ namespace UniversalResourceTransferRedux
             if (receiverID == -1) //Not initted
             {
                 receiverID = registry.RegisterReceiver(this.part.flightID);
+                AbundanceRequest abundanceRequest = new AbundanceRequest;
+                abundanceRequest.
             }
         }
-
     }
 }

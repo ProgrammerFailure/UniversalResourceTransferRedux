@@ -12,7 +12,7 @@ namespace UniversalResourceTransferRedux
     {
         //Part properties
         [KSPField(isPersistant = true, guiActive = false)]
-        private int transmitterID = -1;
+        public int transmitterID = -1;
 
         [KSPField(isPersistant = false, guiActive = false)]
         private float maxTransmittedPower;

@@ -21,10 +21,10 @@ namespace UniversalResourceTransferRedux
         private Dictionary<int, uint> receivers = new Dictionary<int, uint>();
 
         //Transmitter ID -> ProtoPartModuleSnapshot
-        private Dictionary<int, ProtoPartModuleSnapshot> transmittersProtoPartModules = new Dictionary<int, ProtoPartModuleSnapshot>();
+        private Dictionary<int, ProtoPartSnapshot> transmittersProtoParts = new Dictionary<int, ProtoPartSnapshot>();
 
         //Receiver ID -> ProtoPartModuleSnapshot
-        private Dictionary<int, ProtoPartModuleSnapshot> receiverProtoPartModules = new Dictionary<int, ProtoPartModuleSnapshot>();
+        private Dictionary<int, ProtoPartSnapshot> receiverProtoParts = new Dictionary<int, ProtoPartSnapshot>();
 
         //Private counters for next receiver and transmitter
         [KSPField(isPersistant = true)]
@@ -166,7 +166,7 @@ namespace UniversalResourceTransferRedux
             }
             
             //TODO: Load data BEFORE protopartmodule caching
-            (transmittersProtoPartModules, receiverProtoPartModules) = BuildTransmittersAndReceiversModulesLists();
+            (transmittersProtoParts, receiverProtoParts) = BuildTransmittersAndReceiversPartsLists();
         }
 
         #endregion
@@ -174,25 +174,31 @@ namespace UniversalResourceTransferRedux
 
         #region Internal functions
 
-        private (Dictionary<int, ProtoPartModuleSnapshot>, Dictionary<int, ProtoPartModuleSnapshot>) BuildTransmittersAndReceiversModulesLists()
+        private (Dictionary<int, ProtoPartSnapshot>, Dictionary<int, ProtoPartSnapshot>) BuildTransmittersAndReceiversPartsLists()
         {
-            Dictionary<int, ProtoPartModuleSnapshot> transmitterModulesList = new Dictionary<int, ProtoPartModuleSnapshot>();
-            Dictionary<int, ProtoPartModuleSnapshot> receiversModulesList = new Dictionary<int, ProtoPartModuleSnapshot>();
+            Dictionary<int, ProtoPartSnapshot> transmitterPartsList = new Dictionary<int, ProtoPartSnapshot>();
+            Dictionary<int, ProtoPartSnapshot> receiverPartsList = new Dictionary<int, ProtoPartSnapshot>();
 
             foreach (int transmitterId in transmitters.Keys)
             {
                 var transmitterPart = FlightGlobals.FindProtoPartByID(transmitters[transmitterId]);
-                var transmitterModule = transmitterPart.modules.Find(s => s.moduleName == "URT_Transmitter" && int.Parse(s.moduleValues.GetValue("transmitterID")) == transmitterId);
-                transmitterModulesList.Add(transmitterId, transmitterModule);
+                if (transmitterPart == null) //The vessel is LOADED
+                {
+                    var transmitterFullPart = FlightGlobals.FindPartByID(transmitters[transmitterId]);
+                    var transmitterVesselRef = transmitterFullPart.vessel;
+                    transmitterPart = new ProtoPartSnapshot(transmitterFullPart, transmitterVesselRef.protoVessel);
+                }
+                transmitterPartsList.Add(transmitterId, transmitterPart);
             }
             foreach (int receiverId in receivers.Keys)
             {
                 var receiverPart = FlightGlobals.FindProtoPartByID(receivers[receiverId]);
-                var receiverModule = receiverPart.modules.Find(s => s.moduleName == "URT_Receiver" && int.Parse(s.moduleValues.GetValue("receiverID")) == receiverId);
-                receiversModulesList.Add(receiverId, receiverModule);
+                receiverPartsList.Add(receiverId, receiverPart);
+                receiverPartsList.Add(receiverId, new ProtoPartSnapshot(FlightGlobals.FindProtoPartByID()));
+     
             }
 
-            return (transmitterModulesList, receiversModulesList);
+            return (transmitterPartsList, receiverPartsList);
         }
 
         #endregion
@@ -253,17 +259,6 @@ namespace UniversalResourceTransferRedux
         public List<(int transmitterId, float recvPower)> GetReceiverPairings(int receiverId)
         {
             return receiverTransmitterPairings[receiverId];
-        }
-
-        public ProtoPartModuleSnapshot GetTransmitterProtoPartModuleByTransmitterId(int transmitterId)
-        {
-            return transmittersProtoPartModules[transmitterId];
-        }
-
-        public ProtoPartModuleSnapshot GetReceiverProtoPartModuleByReceiverId(int receiverId)
-        {
-            return receiverProtoPartModules[receiverId];
-            
         }
         #endregion
     }
