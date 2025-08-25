@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
+using static UniversalResourceTransferRedux.GenericUtils;
 
 namespace UniversalResourceTransferRedux
 {
@@ -37,9 +38,9 @@ namespace UniversalResourceTransferRedux
         private bool isTransmitting = false;
 
         private URT_Registry registry;
-        private int targetId;
-        private uint targetPartId;
-        private string targetVesselName;
+        private int targetId = 0;
+        private ProtoPartSnapshot targetPartSnapshot = null;
+        private ReceiverInfo target = new ReceiverInfo();
 
 
         public override void OnStart(StartState state)
@@ -52,11 +53,19 @@ namespace UniversalResourceTransferRedux
             }
 
             if (transmitterID == -1) // If uninitiailized
-            { 
-                transmitterID = registry.RegisterTransmitter(this.part.flightID);
+            {
+                transmitterID = registry.registerNewTransmitterId(this.part.flightID);
             }
-            (targetId, targetPartId) = registry.GetReceiverLinkedToTransmitter(transmitterID);
-            if (targetId == -1) { isTransmitting = false; targetVesselName = "Not Transmitting"; targetPartId = 1; }
         }
+
+       
+        //To be a KSPEvent
+        public void SetTarget(int receiverId)
+        {
+            
+        }
+
+        
+
     }
 }

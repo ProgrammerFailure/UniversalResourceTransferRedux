@@ -4,13 +4,15 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+using static UniversalResourceTransferRedux.GenericUtils;
+
 namespace UniversalResourceTransferRedux
 {
     public class URT_Receiver : PartModule
     {
         //Part properties
         [KSPField(isPersistant = true, guiActive = false)]
-        private int receiverID = -1;
+        public int receiverID = -1;
 
         [KSPField(isPersistant = false, guiActive = false)]
         private float receiverArea;
@@ -39,10 +41,18 @@ namespace UniversalResourceTransferRedux
 
             if (receiverID == -1) //Not initted
             {
-                receiverID = registry.RegisterReceiver(this.part.flightID);
-                AbundanceRequest abundanceRequest = new AbundanceRequest;
-                abundanceRequest.
+                receiverID = registry.registerNewReceiverId(this.part.flightID);
             }
+        }
+
+        public ReceiverInfo GetReceiverInfo()
+        {
+            ReceiverInfo receiverInfo = new ReceiverInfo();
+            receiverInfo.Area = receiverArea;
+            receiverInfo.Efficiency = receiverEfficiency;
+            receiverInfo.parentProtoVessel = this.vessel.protoVessel;
+            receiverInfo.Wavelength = receiverWavelength;
+            return receiverInfo;
         }
     }
 }
