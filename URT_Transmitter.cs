@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -37,16 +38,15 @@ namespace UniversalResourceTransferRedux
         //TODO: Add callback later for when transmitting is turned on or off
         private bool isTransmitting = false;
 
-        private URT_Registry registry;
-        private int targetId = 0;
-        private ProtoPartSnapshot targetPartSnapshot = null;
-        private ReceiverInfo target = new ReceiverInfo();
+        private ReceiverInfo? targetReceiverInfo = new ReceiverInfo();
+        private UniversalResourceTransferRedux.RegistryComponents.URT_Registry registry;
+        private int targetId = -1;
 
 
         public override void OnStart(StartState state)
         {
             if (state == StartState.Editor) { return; }
-            registry = ScenarioRunner.GetLoadedModules().Find(s => s.ClassName == "URT_Registry") as URT_Registry;
+            registry = ScenarioRunner.GetLoadedModules().Find(s => s.ClassName == "URT_Registry") as UniversalResourceTransferRedux.RegistryComponents.URT_Registry;
             if (registry == null)
             {
                 Debug.Log("[URT_Transmitter] URT_Registry module not found.");
@@ -56,16 +56,50 @@ namespace UniversalResourceTransferRedux
             {
                 transmitterID = registry.registerNewTransmitterId(this.part.flightID);
             }
+
+            if (targetId != -1) //If target exists
+            {
+                StartCoroutine(RefreshTargetReceiverInfo());
+            }
+            else
+            {
+                isTransmitting = false;
+            }
         }
 
-       
+        
         //To be a KSPEvent
         public void SetTarget(int receiverId)
         {
             
         }
 
-        
 
+        #region Utilities
+        public TransmitterInfo GetTransmitterInfo()
+        {
+            return new TransmitterInfo(
+                transmitterArea,
+                transmitterWavelength,
+                transmitterEfficiency,
+                this.part.vessel.protoVessel,
+                transmittedPower,
+                isTransmitting
+            );
+        }
+        private IEnumerator RefreshTargetReceiverInfo() // Changed return type to IEnumerator
+        {
+            // Wait for a short duration (e.g., 0.5 seconds) to allow other modules to initialize
+            yield return new WaitForSeconds(0.5f);
+
+            // Now, perform the potentially expensive data fetching
+            targetReceiverInfo = registry.GetReceiverInfo(targetId, this.ClassName);
+
+            // You could also add other initialization steps here that depend on targetReceiverInfo
+            // For example, if you need to set up UI elements based on the fetched info.
+        }
+
+
+        #endregion
     }
 }

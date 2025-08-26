@@ -45,10 +45,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="RegistryComponents\URT_Registry_FetchInfoFunctions.cs" />
+    <Compile Include="RegistryComponents\URT_Registry_RegistrationFunctions.cs" />
     <Compile Include="URT_PowerCalculator.cs" />
     <Compile Include="URT_Receiver.cs" />
     <Compile Include="URT_Transmitter.cs" />
-    <Compile Include="URT_Registry_SaverSetter.cs" />
+    <Compile Include="RegistryComponents\URT_Registry_Core.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="utils.cs" />
   </ItemGroup>

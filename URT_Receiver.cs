@@ -1,9 +1,10 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
+using UnityEngine;
 using static UniversalResourceTransferRedux.GenericUtils;
 
 namespace UniversalResourceTransferRedux
@@ -32,12 +33,15 @@ namespace UniversalResourceTransferRedux
         //TODO: Add callback later for when receiving is turned on or off
         private bool isReceiving = false;
 
-        private URT_Registry registry;
+        private List<int> pairedTransmitters = new List<int>(); //TODO: implement serialization/deserialization of this list
+        private Dictionary<int, TransmitterInfo?> pairedTransmitterInfos = new Dictionary<int, TransmitterInfo?>();
+
+        private UniversalResourceTransferRedux.RegistryComponents.URT_Registry registry;
 
         public override void OnStart(StartState state)
         {
             if (state == StartState.Editor) { return; }
-            registry = ScenarioRunner.GetLoadedModules().Find(s => s.ClassName == "URT_Registry") as URT_Registry;
+            registry = ScenarioRunner.GetLoadedModules().Find(s => s.ClassName == "URT_Registry") as UniversalResourceTransferRedux.RegistryComponents.URT_Registry;
 
             if (receiverID == -1) //Not initted
             {
@@ -45,14 +49,31 @@ namespace UniversalResourceTransferRedux
             }
         }
 
+
+
+        #region utilities
         public ReceiverInfo GetReceiverInfo()
         {
-            ReceiverInfo receiverInfo = new ReceiverInfo();
-            receiverInfo.Area = receiverArea;
-            receiverInfo.Efficiency = receiverEfficiency;
-            receiverInfo.parentProtoVessel = this.vessel.protoVessel;
-            receiverInfo.Wavelength = receiverWavelength;
-            return receiverInfo;
+            return new ReceiverInfo(
+                receiverArea,
+                receiverWavelength,
+                receiverEfficiency,
+                this.part.vessel.protoVessel,
+                pairedTransmitters
+            );
         }
+
+        private IEnumerator RefreshTransmitterCache()
+        {
+            yield return new WaitForSeconds(0.5f);
+
+            foreach (int transmitterId in pairedTransmitterInfos.Keys)
+            {
+                pairedTransmitterInfos[transmitterId] = registry.GetTransmitter(transmitterId, this.ClassName);
+                yield return null;
+            }
+        }
+        #endregion
+
     }
 }

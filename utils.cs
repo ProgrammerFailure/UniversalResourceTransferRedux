@@ -188,6 +188,57 @@ namespace UniversalResourceTransferRedux
 
             public ProtoVessel parentProtoVessel;
 
+            public List<int> pairedTransmitters;
+
+            public ReceiverInfo(float _Area, float _Wavelength, float _Efficiency, ProtoVessel _parentProtoVessel, List<int> _pairedTransmitters)
+            {
+                Area = _Area;
+                Wavelength = _Wavelength;
+                Efficiency = _Efficiency;
+                parentProtoVessel = _parentProtoVessel;
+                pairedTransmitters = _pairedTransmitters;
+            }
+
+        }
+
+        public struct TransmitterInfo
+        {
+            /// <summary>
+            /// The surface area of the transmitter.
+            /// </summary>
+            public float Area;
+            /// <summary>
+            /// The tuned wavelength of the transmitter.
+            /// </summary>
+            public float Wavelength;
+            /// <summary>
+            /// The power conversion efficiency of the transmitter.
+            /// </summary>
+            public float Efficiency;
+            ///<summary>
+            /// The current input power of the transmitter
+            ///</summary>
+            public float Power;
+            ///<summary>
+            /// Whether the transmitter is transmitting
+            /// </summary>
+            public bool isTransmitting;
+            ///<summary>
+            ///The parent vessel of the transmitter
+            /// </summary>
+            public ProtoVessel parentProtoVessel;
+            ///<summary>
+            ///The receiverId of the target receiver of the transmitter
+            ///</summary>
+            public TransmitterInfo(float _Area, float _Wavelength, float _Efficiency, ProtoVessel _parentProtoVessel, float _Power, bool _isTransmitting)
+            {
+                Area = _Area;
+                Wavelength = _Wavelength;
+                Efficiency = _Efficiency;
+                parentProtoVessel = _parentProtoVessel;
+                isTransmitting = _isTransmitting;
+                Power = _Power;
+            }
         }
     }
 }
