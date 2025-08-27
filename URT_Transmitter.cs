@@ -38,7 +38,7 @@ namespace UniversalResourceTransferRedux
         //TODO: Add callback later for when transmitting is turned on or off
         private bool isTransmitting = false;
 
-        private ReceiverInfo? targetReceiverInfo = new ReceiverInfo();
+        private ReceiverInfo? targetReceiverInfo;
         private UniversalResourceTransferRedux.RegistryComponents.URT_Registry registry;
         private int targetId = -1;
 
@@ -65,6 +65,15 @@ namespace UniversalResourceTransferRedux
             {
                 isTransmitting = false;
             }
+            registry.registerActiveTransmitter(transmitterID, this);
+        }
+
+        public void OnDestroy()
+        {
+            if (registry != null)
+            {
+                registry.deregisterActiveTransmitter(transmitterID);
+            }
         }
 
         
@@ -78,7 +87,7 @@ namespace UniversalResourceTransferRedux
         #region Utilities
         public TransmitterInfo GetTransmitterInfo()
         {
-            return new TransmitterInfo(
+            return TransmitterInfo.Create(
                 transmitterArea,
                 transmitterWavelength,
                 transmitterEfficiency,
@@ -93,7 +102,16 @@ namespace UniversalResourceTransferRedux
             yield return new WaitForSeconds(0.5f);
 
             // Now, perform the potentially expensive data fetching
-            targetReceiverInfo = registry.GetReceiverInfo(targetId, this.ClassName);
+            var receiverInfo = registry.GetReceiverInfo(targetId, this.ClassName);
+            if (receiverInfo != null)
+            {
+                targetReceiverInfo = receiverInfo;
+            }
+            else
+            {
+                isTransmitting = false;
+                transmittedPower = 0;
+            }
 
             // You could also add other initialization steps here that depend on targetReceiverInfo
             // For example, if you need to set up UI elements based on the fetched info.

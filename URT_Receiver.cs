@@ -24,6 +24,8 @@ namespace UniversalResourceTransferRedux
         [KSPField(isPersistant = false, guiActive = false)]
         private float receiverEfficiency;
 
+        [KSPField(isPersistant = false, guiActive = false)]
+        private float receiverTuningFactor;
         //Dynamic properties
 
         [KSPField(isPersistant = true, guiActive = true, groupDisplayName = "Universal Resource Receiver", groupName = "URT_Receiver_gui", guiName = "Received Power")]
@@ -47,19 +49,29 @@ namespace UniversalResourceTransferRedux
             {
                 receiverID = registry.registerNewReceiverId(this.part.flightID);
             }
+
+            registry.registerActiveReceiver(receiverID, this);
         }
 
-
+        public void OnDestroy()
+        {
+            if (registry != null)
+            {
+                registry.deregisterActiveReceiver(receiverID);
+            }
+        }
 
         #region utilities
         public ReceiverInfo GetReceiverInfo()
         {
-            return new ReceiverInfo(
+            return ReceiverInfo.Create(
                 receiverArea,
                 receiverWavelength,
                 receiverEfficiency,
                 this.part.vessel.protoVessel,
-                pairedTransmitters
+                pairedTransmitters,
+                isReceiving,
+                receiverTuningFactor
             );
         }
 
@@ -69,11 +81,15 @@ namespace UniversalResourceTransferRedux
 
             foreach (int transmitterId in pairedTransmitterInfos.Keys)
             {
-                pairedTransmitterInfos[transmitterId] = registry.GetTransmitter(transmitterId, this.ClassName);
+                var pairedTransmitterInfo = registry.GetTransmitter(transmitterId, this.ClassName);
+                if (pairedTransmitterInfo != null)
+                {
+                    pairedTransmitterInfos[transmitterId] = pairedTransmitterInfo;
+                }
+                //Todo: Error checking for if it IS null
                 yield return null;
             }
         }
         #endregion
-
     }
 }
