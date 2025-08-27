@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Policy;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -29,15 +30,32 @@ namespace UniversalResourceTransferRedux
         [KSPField(isPersistant = false, guiActive = false)]
         private float transmitterEfficiency;
 
+        [KSPField(isPersistant = false, guiActive = false)]
+        private string inputResourceName = "ElectricCharge";
+        [KSPField(isPersistant = false, guiActive = false)]
+        private float inputResourceEnergyFactor = 1.0f;
+        [KSPField(isPersistant = false, guiActive = false)]
+        private string inputResourceGuiUnits = "EC/s";
+
         //Dynamic properties
 
-        [KSPField(isPersistant = true, guiActive = true, groupDisplayName = "Universal Resource Transmitter", groupName = "URT_transmitter_gui", guiName = "Transmitted Power"), UI_FloatRange(minValue = 0, maxValue = 0)]
-        //remember to set maxValue to the actual part's max value later on
-        public float transmittedPower;
+        [KSPField(isPersistant = true,
+            guiActive = true,
+            groupDisplayName = "Universal Resource Transmitter",
+            groupName = "URT_transmitter_gui",
+            guiName = "Transmitted Power",
+            guiFormat ="F2",
+            guiUnits = "EC/s")]
+        public float transmittedPowerGui;
 
         [KSPField(isPersistant = true, guiActive = true, groupDisplayName = "Universal Resource Transmitter", groupName = "URT_transmitter_gui",guiName = "Transmission Active"), UI_Toggle(enabledText = "Transmitting", disabledText = "Transmission Disabled")]
         //TODO: Add callback later for when transmitting is turned on or off
         private bool isTransmitting = false;
+
+        [KSPField(isPersistant = false, guiActive = false)]
+        private float transmittedPower;
+
+        private int inputResourceHash;
 
         private ReceiverInfo? targetReceiverInfo;
         private UniversalResourceTransferRedux.RegistryComponents.URT_Registry registry;
@@ -67,6 +85,25 @@ namespace UniversalResourceTransferRedux
                 isTransmitting = false;
             }
             registry.registerActiveTransmitter(transmitterID, this);
+            Fields["transmittedPowerGui"].guiUnits = inputResourceGuiUnits;
+            inputResourceHash = PartResourceLibrary.Instance.GetDefinition(inputResourceName).id;
+        }
+
+        public override void OnFixedUpdate()
+        {
+            if (!isTransmitting)
+            {
+                return;
+            }
+            double vesselCurrentResourceAmount;
+            this.vessel.GetConnectedResourceTotals(inputResourceHash, out vesselCurrentResourceAmount, out double vesselCurrentResourceMaxAmount);
+            if (vesselCurrentResourceAmount < transmittedPowerGui * Time.deltaTime)
+            {
+                isTransmitting = false;
+                return;
+            }
+            this.vessel.RequestResource(this.part, inputResourceHash, transmittedPowerGui * Time.deltaTime, true);
+            transmittedPower = transmittedPowerGui * inputResourceEnergyFactor;
         }
 
         public void OnDestroy()

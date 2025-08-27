@@ -4,11 +4,11 @@ using UnityEngine;
 
 namespace UniversalResourceTransferRedux
 {
-    internal class URT_PowerCalculator
+    internal static class URT_PowerCalculator
     {
         // Issue 1: Removed the unsafe registry field. This class should be stateless.
 
-        public Dictionary<int, float> CalculateRecvPower(GenericUtils.ReceiverInfo receiverInfo, List<(int transmitterId, GenericUtils.TransmitterInfo? transmitterInfo)> transmitters)
+        public static Dictionary<int, float> CalculateRecvPower(GenericUtils.ReceiverInfo receiverInfo, List<(int transmitterId, GenericUtils.TransmitterInfo? transmitterInfo)> transmitters)
         {
             Dictionary<int, float> recvPowers = new Dictionary<int, float>();
 
@@ -38,7 +38,7 @@ namespace UniversalResourceTransferRedux
             return recvPowers;
         }
 
-        private double CalculateWavelengthMismatch(GenericUtils.TransmitterInfo transmitterInfo, GenericUtils.ReceiverInfo receiverInfo)
+        private static double CalculateWavelengthMismatch(GenericUtils.TransmitterInfo transmitterInfo, GenericUtils.ReceiverInfo receiverInfo)
         {
             // Issue 3: Handle division-by-zero for TuningFactor.
             if (receiverInfo.TuningFactor == 0.0)
@@ -59,7 +59,7 @@ namespace UniversalResourceTransferRedux
             return resultEfficiency;
         }
 
-        private double CalculateBeamDispersion(GenericUtils.TransmitterInfo transmitterInfo, GenericUtils.ReceiverInfo receiverInfo)
+        private static double CalculateBeamDispersion(GenericUtils.TransmitterInfo transmitterInfo, GenericUtils.ReceiverInfo receiverInfo)
         {
             // Issue 3: Handle division-by-zero for Area.
             if (transmitterInfo.Area <= 0)

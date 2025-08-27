@@ -40,6 +40,7 @@ namespace UniversalResourceTransferRedux
         private List<int> pairedTransmitters = new List<int>();
         private Dictionary<int, TransmitterInfo?> pairedTransmitterInfos = new Dictionary<int, TransmitterInfo?>();
         private URT_Registry registry;
+        private int outputResourceHash;
 
 
         public override void OnLoad(ConfigNode node)
@@ -94,6 +95,32 @@ namespace UniversalResourceTransferRedux
 
             // Issue 3 Solution: Start the coroutine here, in the safe OnStart lifecycle method.
             StartCoroutine(ManageTransmitterCache());
+            outputResourceHash = PartResourceLibrary.Instance.GetDefinition(outputResourceName).id;
+        }
+
+        public override void OnFixedUpdate()
+        {
+            base.OnFixedUpdate();
+            if (!isReceiving)
+            {
+                return;
+            }
+            this.vessel.GetConnectedResourceTotals(outputResourceHash, out double vesselOutputResourceAmount, out double vesselOutputResourceCapacity);
+            double vesselOutputResourceSpareCapacity = vesselOutputResourceCapacity - vesselOutputResourceAmount;
+            List<(int, TransmitterInfo?)> transmittersTuple = new List<(int, TransmitterInfo?)>();
+            foreach (int transmitterId in pairedTransmitterInfos.Keys)
+            {
+                transmittersTuple.Add((transmitterId, pairedTransmitterInfos[transmitterId]));
+            }
+            receivedPower = URT_PowerCalculator.CalculateRecvPower(GetReceiverInfo(), transmittersTuple).Values.Sum();
+            receivedPowerGui = receivedPower * outputResourceEnergyFactor;
+            if (vesselOutputResourceSpareCapacity < receivedPowerGui)
+            {
+                return;
+
+            }
+            vessel.RequestResource(part, outputResourceHash, -1 * receivedPowerGui, true);
+
         }
 
         public void OnDestroy()
