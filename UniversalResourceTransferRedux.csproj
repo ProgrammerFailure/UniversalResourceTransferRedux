@@ -47,6 +47,7 @@
   <ItemGroup>
     <Compile Include="RegistryComponents\URT_Registry_Events.cs" />
     <Compile Include="RegistryComponents\URT_Registry_FetchInfoFunctions.cs" />
+    <Compile Include="RegistryComponents\URT_Registry_Persistence.cs" />
     <Compile Include="RegistryComponents\URT_Registry_RegistrationFunctions.cs" />
     <Compile Include="URT_PowerCalculator.cs" />
     <Compile Include="URT_Receiver.cs" />

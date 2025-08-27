@@ -122,9 +122,9 @@ namespace UniversalResourceTransferRedux
             public readonly ProtoVessel parentProtoVessel;
             public readonly List<int> pairedTransmitters;
             public readonly bool isReceiving;
-            public readonly float TuningFactor;
+            public readonly double TuningFactor;
 
-            private ReceiverInfo(float area, float wavelength, float efficiency, ProtoVessel vessel, List<int> pairs, bool receiving, float tuningFactor)
+            private ReceiverInfo(float area, float wavelength, float efficiency, ProtoVessel vessel, List<int> pairs, bool receiving, double tuningFactor)
             {
                 Area = area;
                 Wavelength = wavelength;
@@ -138,7 +138,7 @@ namespace UniversalResourceTransferRedux
             /// <summary>
             /// Factory method to create a valid, fully initialized ReceiverInfo struct.
             /// </summary>
-            public static ReceiverInfo Create(float area, float wavelength, float efficiency, ProtoVessel vessel, List<int> pairs, bool receiving, float tuningFactor)
+            public static ReceiverInfo Create(float area, float wavelength, float efficiency, ProtoVessel vessel, List<int> pairs, bool receiving, double tuningFactor)
             {
                 if (vessel == null)
                 {

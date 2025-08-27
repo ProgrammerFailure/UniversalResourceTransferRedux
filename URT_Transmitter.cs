@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
+using UniversalResourceTransferRedux.RegistryComponents;
 using static UniversalResourceTransferRedux.GenericUtils;
 
 namespace UniversalResourceTransferRedux
@@ -46,7 +47,7 @@ namespace UniversalResourceTransferRedux
         public override void OnStart(StartState state)
         {
             if (state == StartState.Editor) { return; }
-            registry = ScenarioRunner.GetLoadedModules().Find(s => s.ClassName == "URT_Registry") as UniversalResourceTransferRedux.RegistryComponents.URT_Registry;
+            registry = URT_Registry.Instance;
             if (registry == null)
             {
                 Debug.Log("[URT_Transmitter] URT_Registry module not found.");

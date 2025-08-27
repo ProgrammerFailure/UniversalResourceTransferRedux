@@ -27,6 +27,15 @@ namespace UniversalResourceTransferRedux.RegistryComponents
             // Initialize the handler delegate here.
             terminationEventHandler = (vessel) => HandleVesselRemoved(vessel, false);
             SubscribeToGameEvents();
+            if (Instance == null)
+            {
+                Instance = this;
+            }
+            else if (Instance != this)
+            {
+                // This prevents issues if KSP were to create a duplicate for some reason.
+                Destroy(this);
+            }
         }
 
         // And always, always unsubscribe in OnDestroy() to prevent issues.

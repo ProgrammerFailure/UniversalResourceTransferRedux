@@ -24,5 +24,11 @@ namespace UniversalResourceTransferRedux.RegistryComponents
 
         Dictionary<int, URT_Receiver> activeReceiverCache = new Dictionary<int, URT_Receiver>();
         Dictionary<int, URT_Transmitter> activeTransmitterCache = new Dictionary<int, URT_Transmitter>();
+
+        /* Add this inside your URT_Registry class */
+
+        public static URT_Registry Instance { get; private set; }
+
+
     }
 }
