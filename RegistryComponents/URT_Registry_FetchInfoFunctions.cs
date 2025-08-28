@@ -23,12 +23,13 @@ namespace UniversalResourceTransferRedux.RegistryComponents
                 {
                     //This is the specific logic for parsing a TRANSMITTER from a proto snapshot
                     return TransmitterInfo.Create(
-                        protoModule.moduleValues.GetFloat("transmitterArea", 0f),
+                        protoModule.moduleValues.GetFloat("transmitterArea", 100f),
                         protoModule.moduleValues.GetFloat("transmitterWavelength", 0f),
-                        protoModule.moduleValues.GetFloat("transmitterEfficiency", 0f),
+                        protoModule.moduleValues.GetFloat("transmitterEfficiency", 1f),
                         protoVessel,
                         protoModule.moduleValues.GetFloat("transmittedPower", 0f),
-                        protoModule.moduleValues.GetBool("isTransmitting", false)
+                        protoModule.moduleValues.GetBool("isTransmitting", false),
+                        protoModule.moduleValues.GetFloat("buildQuality", 1f)
                     );
                 },
                 classNameForLogging: className

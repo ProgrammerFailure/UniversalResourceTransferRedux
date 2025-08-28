@@ -77,6 +77,7 @@ namespace UniversalResourceTransferRedux
 
             // Issue 2: Corrected diameter calculation (Radius * 2).
             double transmitterDiameter = 2 * Math.Sqrt(transmitterInfo.Area / Math.PI);
+            transmitterDiameter *= transmitterInfo.buildQuality;
 
             double divergenceAngleRadians = 1.22 * (transmitterInfo.Wavelength / transmitterDiameter);
             double beamSpotRadius = Math.Tan(divergenceAngleRadians) * distance;

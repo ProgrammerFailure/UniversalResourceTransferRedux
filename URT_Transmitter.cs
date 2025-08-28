@@ -32,10 +32,15 @@ namespace UniversalResourceTransferRedux
 
         [KSPField(isPersistant = false, guiActive = false)]
         private string inputResourceName = "ElectricCharge";
+
         [KSPField(isPersistant = false, guiActive = false)]
         private float inputResourceEnergyFactor = 1.0f;
+
         [KSPField(isPersistant = false, guiActive = false)]
         private string inputResourceGuiUnits = "EC/s";
+
+        [KSPField(isPersistant = false, guiActive = false)]
+        private float buildQuality = 1.0f; // Default to 100% quality
 
         //Dynamic properties
 
@@ -69,8 +74,23 @@ namespace UniversalResourceTransferRedux
             if (registry == null)
             {
                 Debug.Log("[URT_Transmitter] URT_Registry module not found.");
+                isEnabled = false;
+                moduleIsEnabled = false;
+                isTransmitting = false;
+                inputResourceHash = 0;
+                return;
             }
-
+            var resourceDef = PartResourceLibrary.Instance.GetDefinition(inputResourceName);
+            if (resourceDef == null)
+            {
+                Debug.LogError($"{ClassName} with transmitterId ({transmitterID}) unable to initialize: invalid InputResource {inputResourceName}.");
+                isEnabled = false;
+                moduleIsEnabled = false;
+                isTransmitting = false;
+                inputResourceHash = 0;
+                return;
+            }
+            inputResourceHash = resourceDef.id;
             if (transmitterID == -1) // If uninitiailized
             {
                 transmitterID = registry.registerNewTransmitterId(this.part.flightID);
@@ -86,7 +106,7 @@ namespace UniversalResourceTransferRedux
             }
             registry.registerActiveTransmitter(transmitterID, this);
             Fields["transmittedPowerGui"].guiUnits = inputResourceGuiUnits;
-            inputResourceHash = PartResourceLibrary.Instance.GetDefinition(inputResourceName).id;
+            
         }
 
         public override void OnFixedUpdate()
@@ -97,12 +117,12 @@ namespace UniversalResourceTransferRedux
             }
             double vesselCurrentResourceAmount;
             this.vessel.GetConnectedResourceTotals(inputResourceHash, out vesselCurrentResourceAmount, out double vesselCurrentResourceMaxAmount);
-            if (vesselCurrentResourceAmount < transmittedPowerGui * Time.deltaTime)
+            if (vesselCurrentResourceAmount < transmittedPowerGui * Time.fixedDeltaTime)
             {
                 isTransmitting = false;
                 return;
             }
-            this.vessel.RequestResource(this.part, inputResourceHash, transmittedPowerGui * Time.deltaTime, true);
+            this.vessel.RequestResource(this.part, inputResourceHash, transmittedPowerGui, true);
             transmittedPower = transmittedPowerGui * inputResourceEnergyFactor;
         }
 
@@ -131,29 +151,35 @@ namespace UniversalResourceTransferRedux
                 transmitterEfficiency,
                 this.part.vessel.protoVessel,
                 transmittedPower,
-                isTransmitting
+                isTransmitting,
+                buildQuality
             );
         }
-        private IEnumerator RefreshTargetReceiverInfo() // Changed return type to IEnumerator
+        private IEnumerator RefreshTargetReceiverInfo()
         {
-            // Wait for a short duration (e.g., 0.5 seconds) to allow other modules to initialize
             yield return new WaitForSeconds(0.5f);
-
-            // Now, perform the potentially expensive data fetching
-            var receiverInfo = registry.GetReceiverInfo(targetId, this.ClassName);
-            if (receiverInfo != null)
+            // This is an infinite loop that runs for the lifetime of the module.
+            while (true)
             {
-                targetReceiverInfo = receiverInfo;
-            }
-            else
-            {
-                isTransmitting = false;
-                transmittedPower = 0;
-            }
+                // Initial wait to allow game world to initialize
 
-            // You could also add other initialization steps here that depend on targetReceiverInfo
-            // For example, if you need to set up UI elements based on the fetched info.
+                var receiverInfo = registry.GetReceiverInfo(targetId, this.ClassName);
+                if (receiverInfo.HasValue)
+                {
+                    targetReceiverInfo = receiverInfo.Value;
+                    isTransmitting = true;
+                }
+                else
+                {
+                    isTransmitting = false; // Could also set isTransmitting = false;
+                    transmittedPower = 0;
+                }
+
+                // Wait for 30 seconds before the next refresh cycle.
+                yield return new WaitForSeconds(30f);
+            }
         }
+
 
 
         #endregion

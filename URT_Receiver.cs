@@ -18,15 +18,16 @@ namespace UniversalResourceTransferRedux
         [KSPField(isPersistant = false, guiActive = false)]
         private float receiverEfficiency;
         [KSPField(isPersistant = false, guiActive = false)]
-        public double receiverTuningFactor;
+        private double receiverTuningFactor;
         [KSPField(isPersistant = true, guiActive = false)]
-        public string outputResourceName = "ElectricCharge";
+        private string outputResourceName = "ElectricCharge";
         [KSPField(isPersistant = true, guiActive = false)]
-        public float outputResourceEnergyFactor = 1.0f;
+        private float outputResourceEnergyFactor = 1.0f;
+
 
         //Dynamic properties
         [KSPField(isPersistant = true, guiActive = false)]
-        public float receivedPower;
+        private float receivedPower;
         [KSPField(isPersistant = true, guiActive = false)]
         public int receiverID = -1;
 
@@ -49,8 +50,10 @@ namespace UniversalResourceTransferRedux
             if (node.HasValue("pairedTransmitters"))
             {
                 // Parse the saved string into our list
-                pairedTransmitters = node.GetValue("pairedTransmitters").Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
-                                           .Select(s => int.Parse(s)).ToList();
+                pairedTransmitters = node.GetValue("pairedTransmitters")
+                                            .Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                                            .Select(s => int.Parse(s))
+                                            .ToList();
 
                 // Issue 2 Solution: Initialize the cache dictionary with keys from the loaded list.
                 pairedTransmitterInfos.Clear();
@@ -95,7 +98,17 @@ namespace UniversalResourceTransferRedux
 
             // Issue 3 Solution: Start the coroutine here, in the safe OnStart lifecycle method.
             StartCoroutine(ManageTransmitterCache());
-            outputResourceHash = PartResourceLibrary.Instance.GetDefinition(outputResourceName).id;
+            var resourceDef = PartResourceLibrary.Instance.GetDefinition(outputResourceName);
+            if (resourceDef == null)
+            {
+                Debug.LogError($"{ClassName} with receiverId ({receiverID}) unable to initialize: invalid OutputResource {outputResourceName}.");
+                isEnabled = false;
+                moduleIsEnabled = false;
+                isReceiving = false;
+                outputResourceHash = 0;
+                return;
+            }
+            outputResourceHash = resourceDef.id;
         }
 
         public override void OnFixedUpdate()

@@ -155,9 +155,10 @@ namespace UniversalResourceTransferRedux
             public readonly float Efficiency;
             public readonly float Power;
             public readonly bool isTransmitting;
+            public readonly float buildQuality;
             public readonly ProtoVessel parentProtoVessel;
 
-            private TransmitterInfo(float area, float wavelength, float efficiency, ProtoVessel vessel, float power, bool transmitting)
+            private TransmitterInfo(float area, float wavelength, float efficiency, ProtoVessel vessel, float power, bool transmitting, float build_quality)
             {
                 Area = area;
                 Wavelength = wavelength;
@@ -165,18 +166,19 @@ namespace UniversalResourceTransferRedux
                 parentProtoVessel = vessel;
                 isTransmitting = transmitting;
                 Power = power;
+                buildQuality = build_quality;
             }
 
             /// <summary>
             /// Factory method to create a valid, fully initialized TransmitterInfo struct.
             /// </summary>
-            public static TransmitterInfo Create(float area, float wavelength, float efficiency, ProtoVessel vessel, float power, bool transmitting)
+            public static TransmitterInfo Create(float area, float wavelength, float efficiency, ProtoVessel vessel, float power, bool transmitting, float build_quality)
             {
                 if (vessel == null)
                 {
                     throw new ArgumentNullException(nameof(vessel), "A TransmitterInfo snapshot cannot be created without a parent ProtoVessel.");
                 }
-                return new TransmitterInfo(area, wavelength, efficiency, vessel, power, transmitting);
+                return new TransmitterInfo(area, wavelength, efficiency, vessel, power, transmitting, build_quality);
             }
         }
     }
