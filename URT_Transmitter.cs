@@ -6,6 +6,7 @@ using System.Security.Policy;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.Diagnostics;
 using UniversalResourceTransferRedux.RegistryComponents;
 using static UniversalResourceTransferRedux.GenericUtils;
 
@@ -57,14 +58,20 @@ namespace UniversalResourceTransferRedux
         //TODO: Add callback later for when transmitting is turned on or off
         private bool isTransmitting = false;
 
-        [KSPField(isPersistant = false, guiActive = false)]
+        [KSPField(isPersistant = true, guiActive = false)]
         private float transmittedPower;
+
+        [KSPField(isPersistant = true, guiActive = false)]
+        private double lastUpdateTime;
+
+        [KSPField(isPersistant = true, guiActive = false)]
+        private int targetId = -1;
 
         private int inputResourceHash;
 
         private ReceiverInfo? targetReceiverInfo;
         private UniversalResourceTransferRedux.RegistryComponents.URT_Registry registry;
-        private int targetId = -1;
+        
 
 
         public override void OnStart(StartState state)
@@ -117,12 +124,14 @@ namespace UniversalResourceTransferRedux
             }
             double vesselCurrentResourceAmount;
             this.vessel.GetConnectedResourceTotals(inputResourceHash, out vesselCurrentResourceAmount, out double vesselCurrentResourceMaxAmount);
-            if (vesselCurrentResourceAmount < transmittedPowerGui * Time.fixedDeltaTime)
+            var deltaTime = Planetarium.GetUniversalTime() - lastUpdateTime;
+            lastUpdateTime += deltaTime;
+            if (vesselCurrentResourceAmount < transmittedPowerGui * deltaTime)
             {
                 isTransmitting = false;
                 return;
             }
-            this.vessel.RequestResource(this.part, inputResourceHash, transmittedPowerGui, true);
+            this.vessel.RequestResource(this.part, inputResourceHash, transmittedPowerGui * deltaTime, true);
             transmittedPower = transmittedPowerGui * inputResourceEnergyFactor;
         }
 

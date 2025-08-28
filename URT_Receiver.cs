@@ -36,6 +36,8 @@ namespace UniversalResourceTransferRedux
         private bool isReceiving = false;
         [KSPField(isPersistant = false, guiActive = true, groupDisplayName = "Universal Resource Receiver", groupName = "URT_Receiver_gui", guiName = "Received Power", guiUnits = "EC/s", guiFormat = "F2")]
         private float receivedPowerGui;
+        [KSPField(isPersistant = true, guiActive = false)]
+        private double lastUpdateTime;
 
 
         private List<int> pairedTransmitters = new List<int>();
@@ -127,12 +129,14 @@ namespace UniversalResourceTransferRedux
             }
             receivedPower = URT_PowerCalculator.CalculateRecvPower(GetReceiverInfo(), transmittersTuple).Values.Sum();
             receivedPowerGui = receivedPower * outputResourceEnergyFactor;
-            if (vesselOutputResourceSpareCapacity < receivedPowerGui)
+            var deltaTime = Planetarium.GetUniversalTime() - lastUpdateTime;
+            lastUpdateTime += deltaTime;
+            if (vesselOutputResourceSpareCapacity < receivedPowerGui * deltaTime)
             {
                 return;
 
             }
-            vessel.RequestResource(part, outputResourceHash, -1 * receivedPowerGui, true);
+            vessel.RequestResource(part, outputResourceHash, -1 * receivedPowerGui * deltaTime, true);
 
         }
 
