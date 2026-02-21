@@ -40,7 +40,7 @@ namespace UniversalResourceTransferRedux
         private double lastUpdateTime;
 
 
-        private List<int> pairedTransmitters = new List<int>();
+        public List<int> pairedTransmitters = new List<int>();
         private Dictionary<int, TransmitterInfo?> pairedTransmitterInfos = new Dictionary<int, TransmitterInfo?>();
         private URT_Registry registry;
         private int outputResourceHash;
@@ -128,7 +128,7 @@ namespace UniversalResourceTransferRedux
                 transmittersTuple.Add((transmitterId, pairedTransmitterInfos[transmitterId]));
             }
             receivedPower = URT_PowerCalculator.CalculateRecvPower(GetReceiverInfo(), transmittersTuple).Values.Sum();
-            receivedPowerGui = receivedPower * outputResourceEnergyFactor;
+            receivedPowerGui = receivedPower / outputResourceEnergyFactor;
             var deltaTime = Planetarium.GetUniversalTime() - lastUpdateTime;
             lastUpdateTime += deltaTime;
             if (vesselOutputResourceSpareCapacity < receivedPowerGui * deltaTime)
@@ -163,8 +163,30 @@ namespace UniversalResourceTransferRedux
             );
         }
 
+        public void RemoveTransmitter(int transmitterId)
+        {
+            if (pairedTransmitters.Contains(transmitterId))
+            {
+                pairedTransmitters.Remove(transmitterId);
+                pairedTransmitterInfos.Remove(transmitterId);
+            }
+        }
+
+        public void AddTransmitter(int transmitterID)
+        {
+            if (!pairedTransmitters.Contains(transmitterID))
+            {
+                pairedTransmitters.Add(transmitterID);
+            }
+        }
+
+        public void SetReceiverState(bool isEnabled)
+        {
+            isReceiving = isEnabled;
+        }
         private IEnumerator ManageTransmitterCache()
         {
+            yield return new WaitForSeconds(0.5f);
             while (true)
             {
                 while (!isReceiving)
@@ -173,11 +195,12 @@ namespace UniversalResourceTransferRedux
                 }
 
                 Debug.Log($"[URT_Receiver] Refreshing cache for {pairedTransmitterInfos.Count} transmitters.");
-                pairedTransmitterInfos.Clear();
+                var tempDict = new Dictionary<int, TransmitterInfo?>();
                 foreach (int transmitterId in pairedTransmitters.ToList())
                 {
-                    pairedTransmitterInfos.Add(transmitterId, registry.GetTransmitter(transmitterId, ClassName));
+                    tempDict.Add(transmitterId, registry.GetTransmitter(transmitterId));
                 }
+                pairedTransmitterInfos = tempDict;
                 yield return new WaitForSeconds(30f);
             }
         }

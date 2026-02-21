@@ -10,7 +10,92 @@ namespace UniversalResourceTransferRedux.RegistryComponents
 {
     internal partial class URT_Registry
     {
-        public TransmitterInfo? GetTransmitter(int transmitterId, string className)
+        public int[] GetAllReceiverIds()
+        {
+            return receiverFlightIds.Keys.ToArray();
+        }
+
+        public int[] GetAllTransmitterIds()
+        {
+            return transmitterFlightIds.Keys.ToArray();
+        }
+        public int GetTransmitterTarget(int transmitterId)
+        {
+            if (activeTransmitterCache.TryGetValue(transmitterId, out URT_Transmitter transmitter)
+                && transmitter != null)
+            {
+                return transmitter.targetId;
+            }
+            else if (!transmitterFlightIds.ContainsKey(transmitterId))
+            {
+                return -1;
+            }
+            else if (FlightGlobals.FindPartByID(transmitterFlightIds[transmitterId]) is Part part)
+            {
+                return part.FindModulesImplementing<URT_Transmitter>().Find(s => s.transmitterID == transmitterId).targetId;
+            }
+            else if (FlightGlobals.FindProtoPartByID(transmitterFlightIds[transmitterId]) is ProtoPartSnapshot protoPart)
+            {
+                return protoPart.modules.FindAll(s => s.moduleName == "URT_Transmitter").
+                    Find(s => s.moduleValues.GetInt("transmitterID") == transmitterId).
+                    moduleValues.GetInt("targetId");
+            }
+            else
+            {
+                return -1;
+            }
+        }
+        public (string, string)? GetReceiverPartAndVesselName(int receiverId)
+        {
+            if (activeReceiverCache.TryGetValue(receiverId, out URT_Receiver receiver)
+                && receiver != null)
+            {
+                return (receiver.part.partName,
+                        receiver.vessel.vesselName);
+            }
+            else if (!receiverFlightIds.ContainsKey(receiverId))
+            {
+                return null;
+            }
+            else if (FlightGlobals.FindPartByID(receiverFlightIds[receiverId]) is Part part)
+            {
+
+                return (part.partName, part.vessel.vesselName);
+            }
+            else if (FlightGlobals.FindProtoPartByID(receiverFlightIds[receiverId]) is ProtoPartSnapshot protoPart)
+            {
+                return (protoPart.partName, protoPart.pVesselRef.vesselName);
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        public (string, string)? GetTransmitterPartAndVesselName(int transmitterId)
+        {
+            if (activeTransmitterCache.TryGetValue(transmitterId, out URT_Transmitter transmitter) && transmitter != null)
+            {
+                return (transmitter.part.partName, transmitter.vessel.vesselName);
+            }
+            else if (!transmitterFlightIds.ContainsKey(transmitterId))
+            {
+                return null;
+            }
+            else if (FlightGlobals.FindPartByID(transmitterFlightIds[transmitterId]) is Part part)
+            {
+                return (part.partName, part.vessel.vesselName);
+            }
+            else if (FlightGlobals.FindProtoPartByID(transmitterFlightIds[transmitterId]) is ProtoPartSnapshot protoPart)
+            {
+                return (protoPart.partName, protoPart.pVesselRef.vesselName);
+            }
+            else
+            {
+                return null;
+            }
+        }
+        public TransmitterInfo? GetTransmitter(int transmitterId)
         {
             return GetModuleInfo<URT_Transmitter, TransmitterInfo>(
                 customId: transmitterId,
@@ -31,12 +116,11 @@ namespace UniversalResourceTransferRedux.RegistryComponents
                         protoModule.moduleValues.GetBool("isTransmitting", false),
                         protoModule.moduleValues.GetFloat("buildQuality", 1f)
                     );
-                },
-                classNameForLogging: className
+                }
             );
         }
 
-        public ReceiverInfo? GetReceiverInfo(int receiverId, string className)
+        public ReceiverInfo? GetReceiverInfo(int receiverId)
         {
             return GetModuleInfo<URT_Receiver, ReceiverInfo>(
                 customId: receiverId,
@@ -72,8 +156,7 @@ namespace UniversalResourceTransferRedux.RegistryComponents
                         pairedTransmitters,
                         moduleIsReceiving,
                         receiverTuningFactor);
-                },
-                classNameForLogging: className
+                }
             );
         }
 
@@ -100,8 +183,7 @@ namespace UniversalResourceTransferRedux.RegistryComponents
             string moduleNameForProto,
             Func<TModule, int> getModuleIdFromInstance,
             Func<TModule, TInfo> getInfoFromLiveModule,
-            Func<ProtoPartModuleSnapshot, ProtoVessel, TInfo> getInfoFromProtoModule,
-            string classNameForLogging)
+            Func<ProtoPartModuleSnapshot, ProtoVessel, TInfo> getInfoFromProtoModule)
             where TModule : PartModule
             where TInfo : struct
         {
@@ -119,14 +201,14 @@ namespace UniversalResourceTransferRedux.RegistryComponents
             // --- STAGE 1: SLOW PATH (ID and ProtoPart Validation) ---
             if (!flightIdMap.TryGetValue(customId, out uint flightId))
             {
-                Debug.LogError($"{classNameForLogging}: Unable to fetch module with ID {customId}. Reason: ID not found in its corresponding flight ID dictionary.");
+                // Debug.LogError($"{classNameForLogging}: Unable to fetch module with ID {customId}. Reason: ID not found in its corresponding flight ID dictionary.");
                 return null;
             }
 
             var protoPart = FlightGlobals.FindProtoPartByID(flightId);
             if (protoPart == null)
             {
-                Debug.LogError($"{classNameForLogging}: Unable to fetch module with ID {customId}. Reason: ProtoPartSnapshot with flightID {flightId} not found.");
+                // Debug.LogError($"{classNameForLogging}: Unable to fetch module with ID {customId}. Reason: ProtoPartSnapshot with flightID {flightId} not found.");
                 return null;
             }
 
@@ -160,7 +242,7 @@ namespace UniversalResourceTransferRedux.RegistryComponents
             }
 
             // --- FINAL FAILURE ---
-            Debug.LogError($"{classNameForLogging}: All attempts to fetch module with ID {customId} have failed. No live module or valid proto data found.");
+            // Debug.LogError($"{classNameForLogging}: All attempts to fetch module with ID {customId} have failed. No live module or valid proto data found.");
             return null;
         }
 

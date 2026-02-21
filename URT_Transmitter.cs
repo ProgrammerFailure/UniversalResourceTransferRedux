@@ -65,7 +65,7 @@ namespace UniversalResourceTransferRedux
         private double lastUpdateTime;
 
         [KSPField(isPersistant = true, guiActive = false)]
-        private int targetId = -1;
+        public int targetId = -1;
 
         private int inputResourceHash;
 
@@ -147,7 +147,8 @@ namespace UniversalResourceTransferRedux
         //To be a KSPEvent
         public void SetTarget(int receiverId)
         {
-            
+            targetId = receiverId;
+            targetReceiverInfo = registry.GetReceiverInfo(receiverId);
         }
 
 
@@ -164,19 +165,22 @@ namespace UniversalResourceTransferRedux
                 buildQuality
             );
         }
+
+        public void SetTransmitterState(bool isEnabled)
+        {
+            isTransmitting = isEnabled;
+        }
         private IEnumerator RefreshTargetReceiverInfo()
         {
-            yield return new WaitForSeconds(0.5f);
+            yield return new WaitForSeconds(0.5f); // Initial wait to allow game world to initialize
             // This is an infinite loop that runs for the lifetime of the module.
             while (true)
             {
-                // Initial wait to allow game world to initialize
 
-                var receiverInfo = registry.GetReceiverInfo(targetId, this.ClassName);
+                var receiverInfo = registry.GetReceiverInfo(targetId);
                 if (receiverInfo.HasValue)
                 {
                     targetReceiverInfo = receiverInfo.Value;
-                    isTransmitting = true;
                 }
                 else
                 {

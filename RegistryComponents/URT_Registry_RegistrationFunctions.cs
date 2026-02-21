@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Policy;
 using System.Text;
 using System.Threading.Tasks;
 using static UniversalResourceTransferRedux.GenericUtils;
@@ -27,7 +28,7 @@ namespace UniversalResourceTransferRedux.RegistryComponents
 
         public void registerActiveReceiver(int receiverId, URT_Receiver receiverObject)
         {
-            if (receiverFlightIds.Keys.Contains(receiverId))
+            if (!receiverFlightIds.Keys.Contains(receiverId))
             {
                 activeReceiverCache.Add(receiverId, receiverObject);
             }
@@ -43,7 +44,7 @@ namespace UniversalResourceTransferRedux.RegistryComponents
 
         public void registerActiveTransmitter(int transmitterId, URT_Transmitter transmitterObject)
         {
-            if (activeTransmitterCache.ContainsKey(transmitterId))
+            if (!activeTransmitterCache.ContainsKey(transmitterId))
             {
                 activeTransmitterCache.Add(transmitterId, transmitterObject);
             }
