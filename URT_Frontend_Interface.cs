@@ -63,7 +63,7 @@ namespace UniversalResourceTransferRedux
                 var placeholder = "Target Unknown";
                 if (URT_Registry.Instance.GetTransmitterTarget(transmitterId) is int targetId && targetId != -1)
                 {
-                    (placeholder, transmitterData.TargetName) = URT_Registry.Instance.GetReceiverPartAndVesselName(targetId) ??
+                    (placeholder, transmitterData.TargetName) = URT_Registry.Instance.GetTransmitterPartAndVesselName(targetId) ??
                         ("Target Unknown", "Target Unknown");
                 }
                 else

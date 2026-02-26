@@ -12,14 +12,13 @@ using static UniversalResourceTransferRedux.GenericUtils;
 
 namespace UniversalResourceTransferRedux
 {
-
     public class URT_Transmitter : PartModule
     {
         //Part properties
-        [KSPField(isPersistant = true, guiActive = false)]
+        [KSPField(isPersistant = true, guiActive = true)]
         public int transmitterID = -1;
 
-        [KSPField(isPersistant = false, guiActive = false)]
+        [KSPField(isPersistant = false, guiActive = true)]
         private float maxTransmittedPower;
 
         [KSPField(isPersistant = false, guiActive = false)]
@@ -50,11 +49,11 @@ namespace UniversalResourceTransferRedux
             groupDisplayName = "Universal Resource Transmitter",
             groupName = "URT_transmitter_gui",
             guiName = "Transmitted Power",
-            guiFormat ="F2",
-            guiUnits = "EC/s")]
+            guiFormat = "F2",
+            guiUnits = "EC/s"), UI_FloatRange(minValue = 0, maxValue = 1000, stepIncrement = 10)]
         public float transmittedPowerGui;
 
-        [KSPField(isPersistant = true, guiActive = true, groupDisplayName = "Universal Resource Transmitter", groupName = "URT_transmitter_gui",guiName = "Transmission Active"), UI_Toggle(enabledText = "Transmitting", disabledText = "Transmission Disabled")]
+        [KSPField(isPersistant = true, guiActive = true, groupDisplayName = "Universal Resource Transmitter", groupName = "URT_transmitter_gui", guiName = "Transmission Active"), UI_Toggle(enabledText = "Transmitting", disabledText = "Transmission Disabled")]
         //TODO: Add callback later for when transmitting is turned on or off
         private bool isTransmitting = false;
 
@@ -71,18 +70,35 @@ namespace UniversalResourceTransferRedux
 
         private ReceiverInfo? targetReceiverInfo;
         private UniversalResourceTransferRedux.RegistryComponents.URT_Registry registry;
-        
+
 
 
         public override void OnStart(StartState state)
         {
-            if (state == StartState.Editor) { return; }
+            Debug.Log($"[URT]: Transmitter module spawned; Scene: {HighLogic.LoadedScene.ToString()}");
+            if (!HighLogic.LoadedSceneIsFlight)
+            {
+                Debug.Log("[URT]: Scene not flight! Quitting.");
+                return;
+            }
+            StartCoroutine(WaitForRegistry());
+        }
+        private IEnumerator WaitForRegistry()
+        {
+            while (URT_Registry.Instance == null)
+            {
+                Debug.Log("[URT]: Waiting for URT Registry to be up.");
+                yield return null;
+            }
+            InitTransmitter();
+        }
+        private void InitTransmitter()
+        {
+            if (!HighLogic.LoadedSceneIsFlight) { return; }
             registry = URT_Registry.Instance;
             if (registry == null)
             {
                 Debug.Log("[URT_Transmitter] URT_Registry module not found.");
-                isEnabled = false;
-                moduleIsEnabled = false;
                 isTransmitting = false;
                 inputResourceHash = 0;
                 return;
@@ -91,8 +107,6 @@ namespace UniversalResourceTransferRedux
             if (resourceDef == null)
             {
                 Debug.LogError($"{ClassName} with transmitterId ({transmitterID}) unable to initialize: invalid InputResource {inputResourceName}.");
-                isEnabled = false;
-                moduleIsEnabled = false;
                 isTransmitting = false;
                 inputResourceHash = 0;
                 return;
@@ -101,6 +115,7 @@ namespace UniversalResourceTransferRedux
             if (transmitterID == -1) // If uninitiailized
             {
                 transmitterID = registry.registerNewTransmitterId(this.part.flightID);
+                Debug.Log("[URT]: Transmitter registered with registry!");
             }
 
             if (targetId != -1) //If target exists
@@ -113,9 +128,11 @@ namespace UniversalResourceTransferRedux
             }
             registry.registerActiveTransmitter(transmitterID, this);
             Fields["transmittedPowerGui"].guiUnits = inputResourceGuiUnits;
-            
-        }
+            (Fields["transmittedPowerGui"]?.uiControlFlight as UI_FloatRange).maxValue = maxTransmittedPower;
+            (Fields["transmittedPowerGui"]?.uiControlFlight as UI_FloatRange).stepIncrement = maxTransmittedPower / 100;
+            Debug.Log("[URT]: Transmitter fully initialized and ready!");
 
+        }
         public override void OnFixedUpdate()
         {
             if (!isTransmitting)
@@ -133,6 +150,7 @@ namespace UniversalResourceTransferRedux
             }
             this.vessel.RequestResource(this.part, inputResourceHash, transmittedPowerGui * deltaTime, true);
             transmittedPower = transmittedPowerGui * inputResourceEnergyFactor;
+            
         }
 
         public void OnDestroy()
@@ -143,7 +161,7 @@ namespace UniversalResourceTransferRedux
             }
         }
 
-        
+
         //To be a KSPEvent
         public void SetTarget(int receiverId)
         {

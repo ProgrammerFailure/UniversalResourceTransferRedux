@@ -21,15 +21,15 @@ namespace UniversalResourceTransferRedux.RegistryComponents
         private EventData<ProtoVessel>.OnEvent terminationEventHandler;
 
         // It's good practice to subscribe in OnAwake() or OnLoad() for ScenarioModules.
-        public override void OnAwake()
+        public void Start()
         {
-            base.OnAwake();
             // Initialize the handler delegate here.
             terminationEventHandler = (vessel) => HandleVesselRemoved(vessel, false);
             SubscribeToGameEvents();
             if (Instance == null)
             {
                 Instance = this;
+                Debug.Log("[URT]: UniversalResourceTransferRedux.Registry.Instance has been set!");
             }
             else if (Instance != this)
             {
@@ -41,6 +41,8 @@ namespace UniversalResourceTransferRedux.RegistryComponents
         // And always, always unsubscribe in OnDestroy() to prevent issues.
         public void OnDestroy()
         {
+            Debug.Log("[URT]: UniversalResourceTransferRedux.Registry.Instance has been destroyed!");
+            Instance = null;
             UnsubscribeFromGameEvents();
         }
 

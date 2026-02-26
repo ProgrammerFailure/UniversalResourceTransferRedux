@@ -10,7 +10,7 @@ using static VehiclePhysics.EnergyProvider;
 namespace UniversalResourceTransferRedux.RegistryComponents
 {
     // Scenario modules are per game save.
-    [KSPScenario(ScenarioCreationOptions.AddToAllGames, GameScenes.SPACECENTER)]
+    [KSPScenario(ScenarioCreationOptions.AddToAllGames, GameScenes.FLIGHT)]
     internal partial class URT_Registry : ScenarioModule
     {
         [KSPField(isPersistant = true)]
@@ -28,7 +28,7 @@ namespace UniversalResourceTransferRedux.RegistryComponents
         /* Add this inside your URT_Registry class */
 
         public static URT_Registry Instance { get; private set; }
-
+        private List<Action> registryEventListeners = new List<Action>();
 
     }
 }

@@ -44,7 +44,7 @@
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
     <Reference Include="URTRedux-UI-Interface">
-      <HintPath>..\URTRedux-UI-Interface\bin\Debug\URTRedux-UI-Interface.dll</HintPath>
+      <HintPath>..\URTRedux-UI\Assets\Plugins\URTRedux-UI-Interface.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -53,6 +53,8 @@
     <Compile Include="RegistryComponents\URT_Registry_FetchInfoFunctions.cs" />
     <Compile Include="RegistryComponents\URT_Registry_Persistence.cs" />
     <Compile Include="RegistryComponents\URT_Registry_RegistrationFunctions.cs" />
+    <Compile Include="RegistryComponents\URT_Registry_SyncFunctions.cs" />
+    <Compile Include="URT_FrontendLoader.cs" />
     <Compile Include="URT_Frontend_Interface.cs" />
     <Compile Include="URT_PowerCalculator.cs" />
     <Compile Include="URT_Receiver.cs" />

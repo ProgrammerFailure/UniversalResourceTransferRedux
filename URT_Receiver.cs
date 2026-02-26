@@ -82,7 +82,20 @@ namespace UniversalResourceTransferRedux
 
         public override void OnStart(StartState state)
         {
-            if (state == StartState.Editor) { return; }
+            StartCoroutine(WaitForRegistry());
+        }
+
+        private IEnumerator WaitForRegistry()
+        {
+            while (URT_Registry.Instance != null)
+            {
+                yield return null;
+            }
+            InitReceiver();
+        }
+        private void InitReceiver()
+        {
+
             registry = URT_Registry.Instance;
 
             if (registry == null)
@@ -112,7 +125,6 @@ namespace UniversalResourceTransferRedux
             }
             outputResourceHash = resourceDef.id;
         }
-
         public override void OnFixedUpdate()
         {
             base.OnFixedUpdate();

@@ -10,11 +10,16 @@ namespace UniversalResourceTransferRedux.RegistryComponents
 {
     internal partial class URT_Registry
     {
+        public void registerListener(Action listener)
+        {
+            registryEventListeners.Add(listener);
+        }
         public int registerNewReceiverId(uint partFlightId)
         {
             var receiverId = nextReceiverId;
             nextReceiverId += 1;
             receiverFlightIds.Add(receiverId, partFlightId);
+            callListeners();
             return receiverId;
         }
 
@@ -23,6 +28,7 @@ namespace UniversalResourceTransferRedux.RegistryComponents
             var transmitterId = nextTransmitterId;
             nextTransmitterId += 1;
             transmitterFlightIds.Add(transmitterId, partFlightId);
+            callListeners();
             return transmitterId;
         }
 
@@ -70,11 +76,13 @@ namespace UniversalResourceTransferRedux.RegistryComponents
         public void deregisterReceiver(int receiverId)
         {
             receiverFlightIds.Remove(receiverId);
+            callListeners();
         }
 
         public void deregisterTransmitter(int transmitterId)
         {
             transmitterFlightIds.Remove(transmitterId);
+            callListeners();
         }
 
         public Dictionary<int, uint> getReceiverIds()
@@ -87,7 +95,7 @@ namespace UniversalResourceTransferRedux.RegistryComponents
             List<ReceiverInfo> output = new List<ReceiverInfo>();
             foreach (int receiverId in receiverFlightIds.Keys)
             {
-                var receiverInfo = GetReceiverInfo(receiverId, className);
+                var receiverInfo = GetReceiverInfo(receiverId);
                 if (receiverInfo != null)
                 {
                     output.Add(receiverInfo.Value);
