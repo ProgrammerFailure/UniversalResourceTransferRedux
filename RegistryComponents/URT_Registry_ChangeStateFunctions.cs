@@ -31,7 +31,7 @@ namespace UniversalResourceTransferRedux.RegistryComponents
                     Find(s => s.moduleValues.GetInt("transmitterID") == transmitterId).
                     moduleValues.SetValue("isTransmitting", false);
             }
-            callListeners();
+            TriggerAllListeners();
         }
 
         public void SetReceiverState(int receiverId, bool isEnabled)
@@ -66,7 +66,7 @@ namespace UniversalResourceTransferRedux.RegistryComponents
                 }
 
             }
-            callListeners();
+            TriggerAllListeners();
         }
         public void SetTransmitterTarget(int transmitterId, int receiverId)
         {
@@ -163,7 +163,7 @@ namespace UniversalResourceTransferRedux.RegistryComponents
                 transmitters.Add(transmitterId.ToString());
                 values.SetValue("pairedTransmitters", string.Join(",", transmitters));
             }
-            callListeners();
+            TriggerAllListeners();
         }
 
     }

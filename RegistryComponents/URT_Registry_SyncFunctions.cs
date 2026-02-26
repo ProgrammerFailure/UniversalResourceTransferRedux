@@ -8,7 +8,7 @@ namespace UniversalResourceTransferRedux.RegistryComponents
 {
     internal partial class URT_Registry
     {
-        private void callListeners()
+        public void TriggerAllListeners()
         {
             foreach (var listener in registryEventListeners)
             {

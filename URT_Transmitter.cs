@@ -98,7 +98,7 @@ namespace UniversalResourceTransferRedux
             registry = URT_Registry.Instance;
             if (registry == null)
             {
-                Debug.Log("[URT_Transmitter] URT_Registry module not found.");
+                Debug.LogError("[URT_Transmitter] CRITICAL. URT_Registry module not found.");
                 isTransmitting = false;
                 inputResourceHash = 0;
                 return;
@@ -130,6 +130,8 @@ namespace UniversalResourceTransferRedux
             Fields["transmittedPowerGui"].guiUnits = inputResourceGuiUnits;
             (Fields["transmittedPowerGui"]?.uiControlFlight as UI_FloatRange).maxValue = maxTransmittedPower;
             (Fields["transmittedPowerGui"]?.uiControlFlight as UI_FloatRange).stepIncrement = maxTransmittedPower / 100;
+            Fields["transmittedPowerGui"].uiControlFlight.onFieldChanged = OnPowerChanged;
+            Fields["isTransmitting"].uiControlFlight.onFieldChanged = OnTransmissionStateChanged;
             Debug.Log("[URT]: Transmitter fully initialized and ready!");
 
         }
@@ -162,7 +164,15 @@ namespace UniversalResourceTransferRedux
         }
 
 
-        //To be a KSPEvent
+        public void OnPowerChanged(BaseField field, object obj)
+        {
+            registry.TriggerAllListeners();
+        }
+
+        public void OnTransmissionStateChanged(BaseField field, object obj)
+        {
+
+        }
         public void SetTarget(int receiverId)
         {
             targetId = receiverId;

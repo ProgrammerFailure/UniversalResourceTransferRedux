@@ -80,9 +80,13 @@ namespace UniversalResourceTransferRedux
 
                 // Parent it to the KSP Main Canvas so it draws correctly
                 windowInstance.transform.SetParent(MainCanvasUtil.MainCanvas.transform, false);
+
+                
             }
             windowInstance.SetActive(true);
             windowManager = windowInstance.GetComponent<URT_Frontend.URT_UIManager>();
+            Debug.Log("[URT] Successfully instantiated window");
+            StartCoroutine(WaitForRegistry());
 
         }
 
@@ -94,6 +98,7 @@ namespace UniversalResourceTransferRedux
             }
             windowManager.SetBackendReference(new URT_Frontend_Interface());
             URT_Registry.Instance.registerListener(windowManager.ForceRefresh);
+            Debug.Log("[URT] Successfully set backend ref and force refreshed window");
         }
 
         private void OnToggleOff()

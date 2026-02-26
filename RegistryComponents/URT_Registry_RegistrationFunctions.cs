@@ -19,7 +19,7 @@ namespace UniversalResourceTransferRedux.RegistryComponents
             var receiverId = nextReceiverId;
             nextReceiverId += 1;
             receiverFlightIds.Add(receiverId, partFlightId);
-            callListeners();
+            TriggerAllListeners();
             return receiverId;
         }
 
@@ -28,7 +28,7 @@ namespace UniversalResourceTransferRedux.RegistryComponents
             var transmitterId = nextTransmitterId;
             nextTransmitterId += 1;
             transmitterFlightIds.Add(transmitterId, partFlightId);
-            callListeners();
+            TriggerAllListeners();
             return transmitterId;
         }
 
@@ -76,13 +76,13 @@ namespace UniversalResourceTransferRedux.RegistryComponents
         public void deregisterReceiver(int receiverId)
         {
             receiverFlightIds.Remove(receiverId);
-            callListeners();
+            TriggerAllListeners();
         }
 
         public void deregisterTransmitter(int transmitterId)
         {
             transmitterFlightIds.Remove(transmitterId);
-            callListeners();
+            TriggerAllListeners();
         }
 
         public Dictionary<int, uint> getReceiverIds()
