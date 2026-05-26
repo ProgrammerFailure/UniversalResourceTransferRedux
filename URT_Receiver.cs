@@ -12,21 +12,23 @@ namespace UniversalResourceTransferRedux
     {
         // Part properties
         [KSPField(isPersistant = false, guiActive = false)]
-        private float receiverArea;
+        public float receiverArea;
         [KSPField(isPersistant = true, guiActive = true, guiName = "Wavelength")]
-        private float receiverWavelength;
+        public float receiverWavelength;
         [KSPField(isPersistant = false, guiActive = false)]
-        private float receiverEfficiency;
+        public float receiverEfficiency;
         [KSPField(isPersistant = false, guiActive = false)]
-        private double receiverTuningFactor;
+        public double receiverTuningFactor;
         [KSPField(isPersistant = true, guiActive = false)]
         private string outputResourceName = "ElectricCharge";
+        [KSPField(isPersistant = true, guiActive = false)]
+        private string outputResourceUnits = "EC/s";
         [KSPField(isPersistant = true, guiActive = false)]
         private float outputResourceEnergyFactor = 1.0f;
 
 
         //Dynamic properties
-        [KSPField(isPersistant = true, guiActive = false)]
+        [KSPField(isPersistant = true, guiActive = true)]
         private float receivedPower;
         [KSPField(isPersistant = true, guiActive = false)]
         public int receiverID = -1;
@@ -87,7 +89,7 @@ namespace UniversalResourceTransferRedux
 
         private IEnumerator WaitForRegistry()
         {
-            while (URT_Registry.Instance != null)
+            while (URT_Registry.Instance == null)
             {
                 yield return null;
             }
@@ -110,8 +112,6 @@ namespace UniversalResourceTransferRedux
             }
 
             registry.registerActiveReceiver(receiverID, this);
-
-            // Issue 3 Solution: Start the coroutine here, in the safe OnStart lifecycle method.
             StartCoroutine(ManageTransmitterCache());
             var resourceDef = PartResourceLibrary.Instance.GetDefinition(outputResourceName);
             if (resourceDef == null)
@@ -124,13 +124,18 @@ namespace UniversalResourceTransferRedux
                 return;
             }
             outputResourceHash = resourceDef.id;
+            Fields["receivedPowerGui"].guiUnits = outputResourceUnits;
+            registry.TriggerAllListeners();
         }
         public override void OnFixedUpdate()
         {
-            base.OnFixedUpdate();
             if (!isReceiving)
             {
                 return;
+            }
+            if (lastUpdateTime == 0)
+            {
+                lastUpdateTime = Planetarium.GetUniversalTime();
             }
             this.vessel.GetConnectedResourceTotals(outputResourceHash, out double vesselOutputResourceAmount, out double vesselOutputResourceCapacity);
             double vesselOutputResourceSpareCapacity = vesselOutputResourceCapacity - vesselOutputResourceAmount;
@@ -143,12 +148,7 @@ namespace UniversalResourceTransferRedux
             receivedPowerGui = receivedPower / outputResourceEnergyFactor;
             var deltaTime = Planetarium.GetUniversalTime() - lastUpdateTime;
             lastUpdateTime += deltaTime;
-            if (vesselOutputResourceSpareCapacity < receivedPowerGui * deltaTime)
-            {
-                return;
-
-            }
-            vessel.RequestResource(part, outputResourceHash, -1 * receivedPowerGui * deltaTime, true);
+            vessel.RequestResource(this.part, outputResourceHash, -1 * receivedPowerGui * deltaTime, false);
 
         }
 
@@ -158,6 +158,11 @@ namespace UniversalResourceTransferRedux
             {
                 registry.deregisterActiveReceiver(receiverID);
             }
+        }
+
+        private void OnReceivingStateChanged(BaseField field, object obj)
+        {
+            registry.TriggerAllListeners();
         }
 
         #region utilities
@@ -192,9 +197,16 @@ namespace UniversalResourceTransferRedux
             }
         }
 
+        [KSPEvent(guiActive = true, guiName = "Toggle receiver state")]
+        private void ToggleReceiverState()
+        {
+            isReceiving = !isReceiving;
+            registry.TriggerAllListeners();
+        }
         public void SetReceiverState(bool isEnabled)
         {
             isReceiving = isEnabled;
+            registry.TriggerAllListeners();
         }
         private IEnumerator ManageTransmitterCache()
         {
@@ -217,5 +229,46 @@ namespace UniversalResourceTransferRedux
             }
         }
         #endregion
+        [KSPEvent(guiName = "Check presence in cache", guiActive = true)]
+        private void CheckPresenceInCache()
+        {
+            if (registry == null)
+            {
+                Debug.LogError("Local registry instance null!");
+            }
+            if (URT_Registry.Instance == null)
+            {
+                Debug.LogError("Global registry instance null!");
+            }
+            if (registry.activeReceiverCache.TryGetValue(receiverID, out var receiver))
+            {
+                Debug.Log($"Receiver present in registry cache! Receiver status per registry: {registry.GetReceiverInfo(receiverID)?.isReceiving.ToString()}");
+            }
+            else
+            {
+                Debug.LogError($"Receiver not present in registry cache! Receiver status per registry: {registry.GetReceiverInfo(receiverID)?.isReceiving.ToString()}");
+            }
+        }
+
+        [KSPEvent(guiName = "Force register in cache", guiActive = true)]
+        private void ForceRegister()
+        {
+            registry = URT_Registry.Instance;
+            registry.deregisterReceiver(this.receiverID);
+            receiverID = -1;
+            InitReceiver();
+        }
+
+        [KSPEvent(guiName = "Force refresh transmitter", guiActive = true)]
+        private void ForceRefreshCache()
+        {
+            Debug.Log($"[URT_Receiver] Refreshing cache for {pairedTransmitterInfos.Count} transmitters.");
+            var tempDict = new Dictionary<int, TransmitterInfo?>();
+            foreach (int transmitterId in pairedTransmitters.ToList())
+            {
+                tempDict.Add(transmitterId, registry.GetTransmitter(transmitterId));
+            }
+            pairedTransmitterInfos = tempDict;
+        }
     }
 }
