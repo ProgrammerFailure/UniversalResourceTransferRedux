@@ -44,11 +44,13 @@ namespace UniversalResourceTransferRedux
     {
         private ApplicationLauncherButton appButton;
         private GameObject windowInstance;
+        GameObject popupObj;
         private URT_Frontend.URT_UIManager windowManager;
 
         private void Start()
         {
             GameEvents.onGUIApplicationLauncherReady.Add(OnGuiAppLauncherReady);
+            popupObj = new GameObject("URT_PopupLayer");
         }
         private void OnGuiAppLauncherReady()
         {
@@ -78,13 +80,29 @@ namespace UniversalResourceTransferRedux
                 // Instantiate the UI
                 windowInstance = Instantiate(URT_FrontendLoader.PanelPrefab);
 
-                // Parent it to the KSP Main Canvas so it draws correctly
                 windowInstance.transform.SetParent(MainCanvasUtil.MainCanvas.transform, false);
-
+                windowManager = windowInstance.GetComponent<URT_Frontend.URT_UIManager>();
                 
+
+
+
             }
+            Destroy(popupObj);
+            popupObj = new GameObject("URT_PopupLayer");
+            popupObj.transform.SetParent(MainCanvasUtil.MainCanvas.transform, false);
+
+            RectTransform popupRect = popupObj.AddComponent<RectTransform>();
+
+            popupRect.anchorMin = Vector2.zero;
+            popupRect.anchorMax = Vector2.one;
+            popupRect.offsetMin = Vector2.zero;
+            popupRect.offsetMax = Vector2.zero;
+            popupRect.localScale = Vector3.one;
+
+
+            windowManager.SetPopupLayer(popupRect);
             windowInstance.SetActive(true);
-            windowManager = windowInstance.GetComponent<URT_Frontend.URT_UIManager>();
+
             Debug.Log("[URT] Successfully instantiated window");
             StartCoroutine(WaitForRegistry());
 
@@ -99,6 +117,7 @@ namespace UniversalResourceTransferRedux
             windowManager.SetBackendReference(new URT_Frontend_Interface());
             URT_Registry.Instance.registerListener(windowManager.ForceRefresh);
             Debug.Log("[URT] Successfully set backend ref and force refreshed window");
+
         }
 
         private void OnToggleOff()
@@ -107,11 +126,21 @@ namespace UniversalResourceTransferRedux
             {
                 windowInstance.SetActive(false);
             }
+            foreach (Transform popup in popupObj.transform)
+            {
+                Destroy(popup.gameObject);
+            }
         }
 
         private void OnDisable()
         {
             Destroy(windowInstance);
+            foreach (Transform popup in popupObj.transform)
+            {
+                Destroy(popup.gameObject);
+            }
+            ApplicationLauncher.Instance.RemoveModApplication(appButton);
+            GameEvents.onGUIApplicationLauncherReady.Remove(OnGuiAppLauncherReady);
         }
     }
 }

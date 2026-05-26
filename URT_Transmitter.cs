@@ -18,29 +18,29 @@ namespace UniversalResourceTransferRedux
         [KSPField(isPersistant = true, guiActive = true)]
         public int transmitterID = -1;
 
-        [KSPField(isPersistant = false, guiActive = true)]
-        private float maxTransmittedPower;
+        [KSPField(isPersistant = false, guiActive = true, guiActiveEditor = true)]
+        public float maxTransmittedPower = 10000;
 
         [KSPField(isPersistant = false, guiActive = false)]
-        private float transmitterArea;
+        public float transmitterArea;
 
         [KSPField(isPersistant = true, guiActive = false)]
-        private float transmitterWavelength;
+        public float transmitterWavelength;
 
         [KSPField(isPersistant = false, guiActive = false)]
-        private float transmitterEfficiency;
+        public float transmitterEfficiency;
 
         [KSPField(isPersistant = false, guiActive = false)]
-        private string inputResourceName = "ElectricCharge";
+        public string inputResourceName = "ElectricCharge";
 
         [KSPField(isPersistant = false, guiActive = false)]
-        private float inputResourceEnergyFactor = 1.0f;
+        public float inputResourceEnergyFactor = 1.0f;
 
         [KSPField(isPersistant = false, guiActive = false)]
-        private string inputResourceGuiUnits = "EC/s";
+        public string inputResourceGuiUnits = "EC/s";
 
         [KSPField(isPersistant = false, guiActive = false)]
-        private float buildQuality = 1.0f; // Default to 100% quality
+        public float buildQuality = 1.0f; // Default to 100% quality
 
         //Dynamic properties
 
@@ -57,7 +57,7 @@ namespace UniversalResourceTransferRedux
         //TODO: Add callback later for when transmitting is turned on or off
         private bool isTransmitting = false;
 
-        [KSPField(isPersistant = true, guiActive = false)]
+        [KSPField(isPersistant = true, guiActive = true)]
         private float transmittedPower;
 
         [KSPField(isPersistant = true, guiActive = false)]
@@ -128,31 +128,45 @@ namespace UniversalResourceTransferRedux
             }
             registry.registerActiveTransmitter(transmitterID, this);
             Fields["transmittedPowerGui"].guiUnits = inputResourceGuiUnits;
+            (Fields["transmittedPowerGui"].uiControlFlight as UI_FloatRange).minValue = 0;
             (Fields["transmittedPowerGui"]?.uiControlFlight as UI_FloatRange).maxValue = maxTransmittedPower;
             (Fields["transmittedPowerGui"]?.uiControlFlight as UI_FloatRange).stepIncrement = maxTransmittedPower / 100;
             Fields["transmittedPowerGui"].uiControlFlight.onFieldChanged = OnPowerChanged;
             Fields["isTransmitting"].uiControlFlight.onFieldChanged = OnTransmissionStateChanged;
+            registry.TriggerAllListeners();
             Debug.Log("[URT]: Transmitter fully initialized and ready!");
 
         }
         public override void OnFixedUpdate()
         {
+            transmittedPower = transmittedPowerGui * inputResourceEnergyFactor;
             if (!isTransmitting)
             {
+                transmittedPower = 0f;
                 return;
             }
-            double vesselCurrentResourceAmount;
-            this.vessel.GetConnectedResourceTotals(inputResourceHash, out vesselCurrentResourceAmount, out double vesselCurrentResourceMaxAmount);
-            var deltaTime = Planetarium.GetUniversalTime() - lastUpdateTime;
-            lastUpdateTime += deltaTime;
-            if (vesselCurrentResourceAmount < transmittedPowerGui * deltaTime)
+
+            if (lastUpdateTime == 0)
+            {
+                lastUpdateTime = Planetarium.GetUniversalTime();
+            }
+
+            var currentTime = Planetarium.GetUniversalTime();
+            var deltaTime = currentTime - lastUpdateTime;
+            lastUpdateTime = currentTime;
+
+            this.vessel.GetConnectedResourceTotals(inputResourceHash, out double vesselCurrentResourceAmount, out double vesselCurrentResourceMaxAmount);
+            double requiredEC = transmittedPowerGui * deltaTime;
+
+            if (vesselCurrentResourceAmount < requiredEC)
             {
                 isTransmitting = false;
+                transmittedPower = 0f;
+                Debug.Log("[URT] Transmitter ran out of ElectricCharge and shut down.");
                 return;
             }
-            this.vessel.RequestResource(this.part, inputResourceHash, transmittedPowerGui * deltaTime, true);
-            transmittedPower = transmittedPowerGui * inputResourceEnergyFactor;
-            
+
+            this.vessel.RequestResource(this.part, inputResourceHash, requiredEC, true);
         }
 
         public void OnDestroy()
@@ -166,12 +180,13 @@ namespace UniversalResourceTransferRedux
 
         public void OnPowerChanged(BaseField field, object obj)
         {
+            transmittedPower = transmittedPowerGui * inputResourceEnergyFactor;
             registry.TriggerAllListeners();
         }
 
         public void OnTransmissionStateChanged(BaseField field, object obj)
         {
-
+            registry.TriggerAllListeners();
         }
         public void SetTarget(int receiverId)
         {
@@ -179,6 +194,38 @@ namespace UniversalResourceTransferRedux
             targetReceiverInfo = registry.GetReceiverInfo(receiverId);
         }
 
+        [KSPEvent(active = true, guiActive = true, guiName = "Check presence in cache", name = "transmitterCacheCheck")]
+        public void CheckIfInCache()
+        {
+            if (registry.activeTransmitterCache.ContainsKey(transmitterID))
+            {
+                Debug.Log($"[URT]: Transmitter present in active cache. transmittedPower per the registry: {registry.GetTransmitter(transmitterID).Value.Power}");
+            }
+            else
+            {
+                Debug.LogError($"[URT]: Transmitter not present in active cache! transmittedPower per the registry: {registry.GetTransmitter(transmitterID).Value.Power}");
+            }
+        }
+
+        [KSPEvent(active = true, guiActive = true, guiName = "Force recheck receiver cache", name = "resetReceiverCache")]
+        private void RecheckReceiverCache()
+        {
+            var receiverInfo = registry.GetReceiverInfo(targetId);
+            if (receiverInfo.HasValue)
+            {
+                targetReceiverInfo = receiverInfo.Value;
+            }
+            else
+            {
+                isTransmitting = false;
+            }
+        }
+
+        public void ResetLastUpdateTime()
+        {
+            lastUpdateTime = Planetarium.GetUniversalTime();
+            Debug.Log($"[URT]: lastUpdateTime = {lastUpdateTime}, UniversalTime = {Planetarium.GetUniversalTime()}");
+        }
 
         #region Utilities
         public TransmitterInfo GetTransmitterInfo()
@@ -212,8 +259,7 @@ namespace UniversalResourceTransferRedux
                 }
                 else
                 {
-                    isTransmitting = false; // Could also set isTransmitting = false;
-                    transmittedPower = 0;
+                    isTransmitting = false; 
                 }
 
                 // Wait for 30 seconds before the next refresh cycle.

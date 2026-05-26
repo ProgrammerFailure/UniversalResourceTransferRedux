@@ -22,8 +22,8 @@ namespace UniversalResourceTransferRedux.RegistryComponents
         Dictionary<int, uint> transmitterFlightIds = new Dictionary<int, uint>();
         Dictionary<int, uint> receiverFlightIds = new Dictionary<int, uint>();
 
-        Dictionary<int, URT_Receiver> activeReceiverCache = new Dictionary<int, URT_Receiver>();
-        Dictionary<int, URT_Transmitter> activeTransmitterCache = new Dictionary<int, URT_Transmitter>();
+        public Dictionary<int, URT_Receiver> activeReceiverCache = new Dictionary<int, URT_Receiver>();
+        public Dictionary<int, URT_Transmitter> activeTransmitterCache = new Dictionary<int, URT_Transmitter>();
 
         /* Add this inside your URT_Registry class */
 

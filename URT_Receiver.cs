@@ -125,6 +125,7 @@ namespace UniversalResourceTransferRedux
             }
             outputResourceHash = resourceDef.id;
             Fields["receivedPowerGui"].guiUnits = outputResourceUnits;
+            Fields["isReceiving"].uiControlFlight.onFieldChanged = OnReceivingStateChanged;
             registry.TriggerAllListeners();
         }
         public override void OnFixedUpdate()

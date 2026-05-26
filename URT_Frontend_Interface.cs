@@ -32,9 +32,15 @@ namespace UniversalResourceTransferRedux
 
                 receiverData.Id = receiverId;
                 receiverData.IsEnabled = receiverInfo.isReceiving;
-                (receiverData.PartName, receiverData.VesselName) =
-                    URT_Registry.Instance.GetReceiverPartAndVesselName(receiverId) ??
-                    ("Name Unknown", "Name Unknown");
+                if (URT_Registry.Instance.GetReceiverPartAndVesselName(receiverId) is GenericUtils.PartAndVesselName names)
+                {
+                    (receiverData.PartName, receiverData.VesselName) = (names.partName, names.vesselName);
+                }
+                else
+                {
+                    (receiverData.PartName, receiverData.VesselName) = ("Name Unknown", "Name Unknown");
+                }
+
                 var transmitterInfos = new List<(int, GenericUtils.TransmitterInfo?)>();
                 foreach (int transmitterId in receiverInfo.pairedTransmitters)
                 {
@@ -60,18 +66,27 @@ namespace UniversalResourceTransferRedux
                 transmitterData.Id = transmitterId;
                 transmitterData.IsEnabled = transmitterInfo.isTransmitting;
                 transmitterData.Power = transmitterInfo.Power;
-                var placeholder = "Target Unknown";
                 if (URT_Registry.Instance.GetTransmitterTarget(transmitterId) is int targetId && targetId != -1)
                 {
-                    (placeholder, transmitterData.TargetName) = URT_Registry.Instance.GetTransmitterPartAndVesselName(targetId) ??
-                        ("Target Unknown", "Target Unknown");
+                    if (URT_Registry.Instance.GetReceiverPartAndVesselName(targetId) is GenericUtils.PartAndVesselName transmitterNames)
+                    {
+                        transmitterData.TargetName = transmitterNames.vesselName + ", " + transmitterNames.partName;
+                    }
                 }
                 else
                 {
                     transmitterData.TargetName = "Target Unknown";
                 }
-                (placeholder, transmitterData.VesselName) = URT_Registry.Instance.GetTransmitterPartAndVesselName(targetId) ??
-                    ("Vessel name unknown", "Vessel name unknown");
+
+                if (URT_Registry.Instance.GetTransmitterPartAndVesselName(transmitterId) is GenericUtils.PartAndVesselName names)
+                {
+                    transmitterData.PartName = names.partName;
+                    transmitterData.VesselName = names.vesselName;
+                }
+                else
+                {
+                    (transmitterData.PartName, transmitterData.VesselName) = ("Target Unknown", "Target Unknown");
+                }
                 transmitters.Add(transmitterData);
             }
             return transmitters;

@@ -34,7 +34,7 @@ namespace UniversalResourceTransferRedux.RegistryComponents
 
         public void registerActiveReceiver(int receiverId, URT_Receiver receiverObject)
         {
-            if (!receiverFlightIds.Keys.Contains(receiverId))
+            if (!activeReceiverCache.Keys.Contains(receiverId))
             {
                 activeReceiverCache.Add(receiverId, receiverObject);
             }

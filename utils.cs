@@ -181,5 +181,17 @@ namespace UniversalResourceTransferRedux
                 return new TransmitterInfo(area, wavelength, efficiency, vessel, power, transmitting, build_quality);
             }
         }
+        public struct PartAndVesselName
+        {
+            public string partName;
+            public string vesselName;
+            public static PartAndVesselName Create(string PartName, string VesselName)
+            {
+                var temp = new PartAndVesselName();
+                temp.partName = PartName;
+                temp.vesselName = VesselName;
+                return temp;
+            }
+        }
     }
 }

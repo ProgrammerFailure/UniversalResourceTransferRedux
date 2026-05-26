@@ -45,12 +45,12 @@ namespace UniversalResourceTransferRedux.RegistryComponents
                 return -1;
             }
         }
-        public (string, string)? GetReceiverPartAndVesselName(int receiverId)
+        public PartAndVesselName? GetReceiverPartAndVesselName(int receiverId)
         {
             if (activeReceiverCache.TryGetValue(receiverId, out URT_Receiver receiver)
                 && receiver != null)
             {
-                return (receiver.part.partName,
+                return PartAndVesselName.Create(receiver.part.partName,
                         receiver.vessel.vesselName);
             }
             else if (!receiverFlightIds.ContainsKey(receiverId))
@@ -60,11 +60,11 @@ namespace UniversalResourceTransferRedux.RegistryComponents
             else if (FlightGlobals.FindPartByID(receiverFlightIds[receiverId]) is Part part)
             {
 
-                return (part.partName, part.vessel.vesselName);
+                return PartAndVesselName.Create(part.partName, part.vessel.vesselName);
             }
             else if (FlightGlobals.FindProtoPartByID(receiverFlightIds[receiverId]) is ProtoPartSnapshot protoPart)
             {
-                return (protoPart.partName, protoPart.pVesselRef.vesselName);
+                return PartAndVesselName.Create(protoPart.partName, protoPart.pVesselRef.vesselName);
             }
             else
             {
@@ -72,11 +72,11 @@ namespace UniversalResourceTransferRedux.RegistryComponents
             }
         }
 
-        public (string, string)? GetTransmitterPartAndVesselName(int transmitterId)
+        public PartAndVesselName? GetTransmitterPartAndVesselName(int transmitterId)
         {
             if (activeTransmitterCache.TryGetValue(transmitterId, out URT_Transmitter transmitter) && transmitter != null)
             {
-                return (transmitter.part.partName, transmitter.vessel.vesselName);
+                return PartAndVesselName.Create(transmitter.part.partName, transmitter.vessel.vesselName);
             }
             else if (!transmitterFlightIds.ContainsKey(transmitterId))
             {
@@ -84,165 +84,101 @@ namespace UniversalResourceTransferRedux.RegistryComponents
             }
             else if (FlightGlobals.FindPartByID(transmitterFlightIds[transmitterId]) is Part part)
             {
-                return (part.partName, part.vessel.vesselName);
+                return PartAndVesselName.Create(part.partName, part.vessel.vesselName);
             }
             else if (FlightGlobals.FindProtoPartByID(transmitterFlightIds[transmitterId]) is ProtoPartSnapshot protoPart)
             {
-                return (protoPart.partName, protoPart.pVesselRef.vesselName);
+                return PartAndVesselName.Create(protoPart.partName, protoPart.pVesselRef.vesselName);
             }
             else
             {
                 return null;
             }
         }
-        public TransmitterInfo? GetTransmitter(int transmitterId)
-        {
-            return GetModuleInfo<URT_Transmitter, TransmitterInfo>(
-                customId: transmitterId,
-                flightIdMap: transmitterFlightIds,
-                activeCache: activeTransmitterCache,
-                moduleNameForProto: "URT_Transmitter",
-                getModuleIdFromInstance: module => module.transmitterID,
-                getInfoFromLiveModule: liveModule => liveModule.GetTransmitterInfo(),
-                getInfoFromProtoModule: (protoModule, protoVessel) =>
-                {
-                    //This is the specific logic for parsing a TRANSMITTER from a proto snapshot
-                    return TransmitterInfo.Create(
-                        protoModule.moduleValues.GetFloat("transmitterArea", 100f),
-                        protoModule.moduleValues.GetFloat("transmitterWavelength", 0f),
-                        protoModule.moduleValues.GetFloat("transmitterEfficiency", 1f),
-                        protoVessel,
-                        protoModule.moduleValues.GetFloat("transmittedPower", 0f),
-                        protoModule.moduleValues.GetBool("isTransmitting", false),
-                        protoModule.moduleValues.GetFloat("buildQuality", 1f)
-                    );
-                }
-            );
-        }
-
         public ReceiverInfo? GetReceiverInfo(int receiverId)
         {
-            return GetModuleInfo<URT_Receiver, ReceiverInfo>(
-                customId: receiverId,
-                flightIdMap: receiverFlightIds,
-                activeCache: activeReceiverCache,
-                moduleNameForProto: "URT_Receiver",
-                getModuleIdFromInstance: module => module.receiverID,
-                getInfoFromLiveModule: liveModule => liveModule.GetReceiverInfo(),
-                getInfoFromProtoModule: (protoModule, protoVessel) =>
+            if (activeReceiverCache.TryGetValue(receiverId, out URT_Receiver activeReceiver))
+            {
+                return activeReceiver.GetReceiverInfo();
+            }
+            else if (!receiverFlightIds.TryGetValue(receiverId, out uint receiverFlightId))
+            {
+                return null;
+            }
+            else if (FlightGlobals.FindPartByID(receiverFlightId) is Part receiverPart)
+            {
+                return receiverPart.FindModulesImplementing<URT_Receiver>()?.Find(s => s.receiverID == receiverId)?.GetReceiverInfo();
+            }
+            else if (FlightGlobals.FindProtoPartByID(receiverFlightId) is ProtoPartSnapshot receiverProtoPart)
+            {
+                var protoModule = receiverProtoPart.modules.Find(s => s.moduleName == "URT_Receiver" && s.moduleValues.GetInt("receiverID") == receiverId);
+                if (protoModule == null) return null;
+
+
+                var prefabModule = receiverProtoPart.partInfo.partPrefab.FindModuleImplementing<URT_Receiver>();
+                if (prefabModule == null) return null;
+
+
+                var moduleArea = prefabModule.receiverArea; 
+                var moduleEfficiency = prefabModule.receiverEfficiency;
+                var receiverTuningFactor = prefabModule.receiverTuningFactor;
+
+
+                var moduleWavelength = protoModule.moduleValues.GetFloat("receiverWavelength", prefabModule.receiverWavelength);
+                var moduleIsReceiving = protoModule.moduleValues.GetBool("isReceiving");
+
+                List<int> pairedTransmitters = new List<int>();
+                var serializedList = protoModule.moduleValues.GetString("pairedTransmitters", "");
+                if (!string.IsNullOrEmpty(serializedList))
                 {
-                    // This is the specific logic for parsing a RECEIVER from a proto snapshot
-                    var moduleArea = protoModule.moduleValues.GetFloat("receiverArea", 0f);
-                    var moduleEfficiency = protoModule.moduleValues.GetFloat("receiverEfficiency", 0f);
-                    var moduleWavelength = protoModule.moduleValues.GetFloat("receiverWavelength", 0f);
-                    var moduleParentProtoVessel = protoVessel;
-                    var moduleIsReceiving = protoModule.moduleValues.GetBool("isReceiving");
-                    var receiverTuningFactor = protoModule.moduleValues.GetFloat("receiverTuningFactor");
-                    List<int> pairedTransmitters;
-                    // Handle parsing the list of paired transmitters from the serialized string
-                    var serializedList = protoModule.moduleValues.GetString("pairedTransmittersSerialized", "");
-                    if (!string.IsNullOrEmpty(serializedList))
-                    {
-                        pairedTransmitters = serializedList.Split(',').Select(int.Parse).ToList();
-                    }
-                    else
-                    {
-                        pairedTransmitters = new List<int>();
-                    }
-                    return ReceiverInfo.Create(moduleArea,
-                        moduleWavelength,
-                        moduleEfficiency,
-                        moduleParentProtoVessel,
-                        pairedTransmitters,
-                        moduleIsReceiving,
-                        receiverTuningFactor);
+                    pairedTransmitters = serializedList.Split(',').Select(int.Parse).ToList();
                 }
-            );
+
+                return ReceiverInfo.Create(
+                    moduleArea,
+                    moduleWavelength,
+                    moduleEfficiency,
+                    receiverProtoPart.pVesselRef,
+                    pairedTransmitters,
+                    moduleIsReceiving,
+                    receiverTuningFactor
+                );
+            }
+            return null;
         }
 
-        /// <summary>
-        /// A single, private, generic method to fetch info for any URT module.
-        /// It consolidates the complex logic of checking active caches, finding live parts,
-        /// and falling back to proto-part data parsing.
-        /// </summary>
-        /// <typeparam name="TModule">The PartModule type to look for (e.g., URT_Receiver).</typeparam>
-        /// <typeparam name="TInfo">The struct type to return (e.g., ReceiverInfo).</typeparam>
-        /// <param name="customId">The unique URT ID of the module.</param>
-        /// <param name="flightIdMap">The dictionary mapping URT IDs to KSP part flight IDs.</param>
-        /// <param name="activeCache">The dictionary of currently loaded, active module instances.</param>
-        /// <param name="moduleNameForProto">The string name of the module, for searching in ProtoPartSnapshots.</param>
-        /// <param name="getModuleIdFromInstance">A delegate to retrieve the URT ID from a live module instance.</param>
-        /// <param name="getInfoFromLiveModule">A delegate to convert a live module instance into its TInfo struct.</param>
-        /// <param name="getInfoFromProtoModule">A delegate to parse a ProtoPartModuleSnapshot into its TInfo struct.</param>
-        /// <param name="classNameForLogging">The name of the calling class for logging purposes.</param>
-        /// <returns>A nullable TInfo struct containing the module's data, or null if not found.</returns>
-        private TInfo? GetModuleInfo<TModule, TInfo>(
-            int customId,
-            Dictionary<int, uint> flightIdMap,
-            Dictionary<int, TModule> activeCache,
-            string moduleNameForProto,
-            Func<TModule, int> getModuleIdFromInstance,
-            Func<TModule, TInfo> getInfoFromLiveModule,
-            Func<ProtoPartModuleSnapshot, ProtoVessel, TInfo> getInfoFromProtoModule)
-            where TModule : PartModule
-            where TInfo : struct
+        public TransmitterInfo? GetTransmitter(int transmitterId)
         {
-            // --- STAGE 0: FAST PATH (Check Active Cache) ---
-            // This is the primary optimization. If the module is loaded, we get its data directly.
-            if (activeCache.TryGetValue(customId, out TModule cachedModule))
+            if (activeTransmitterCache.TryGetValue(transmitterId, out var activeTransmitter))
             {
-                // Make sure the cached object hasn't been destroyed by Unity somehow (e.g. scene change)
-                if (cachedModule != null)
-                {
-                    return getInfoFromLiveModule(cachedModule);
-                }
+                return activeTransmitter.GetTransmitterInfo();
             }
-
-            // --- STAGE 1: SLOW PATH (ID and ProtoPart Validation) ---
-            if (!flightIdMap.TryGetValue(customId, out uint flightId))
+            else if (!transmitterFlightIds.TryGetValue(transmitterId, out var transmitterFlightId))
             {
-                // Debug.LogError($"{classNameForLogging}: Unable to fetch module with ID {customId}. Reason: ID not found in its corresponding flight ID dictionary.");
                 return null;
             }
-
-            var protoPart = FlightGlobals.FindProtoPartByID(flightId);
-            if (protoPart == null)
+            else if (FlightGlobals.FindPartByID(transmitterFlightId) is Part transmitterPart)
             {
-                // Debug.LogError($"{classNameForLogging}: Unable to fetch module with ID {customId}. Reason: ProtoPartSnapshot with flightID {flightId} not found.");
-                return null;
+                return transmitterPart.FindModulesImplementing<URT_Transmitter>()?.Find(s => s.transmitterID == transmitterId)?.GetTransmitterInfo();
             }
-
-            // --- STAGE 2: Try to find the live module instance ---
-            // This handles the case where the part is loaded, but wasn't in our active cache for some reason.
-            if (protoPart.pVesselRef?.vesselRef?.Parts != null)
+            else if (FlightGlobals.FindProtoPartByID(transmitterFlightId) is ProtoPartSnapshot transmitterProtoPart)
             {
-                var actualPart = protoPart.pVesselRef.vesselRef.Parts.FirstOrDefault(p => p.flightID == flightId);
-                if (actualPart != null)
-                {
-                    var actualModule = actualPart.FindModulesImplementing<TModule>().FirstOrDefault(m => getModuleIdFromInstance(m) == customId);
-                    if (actualModule != null)
-                    {
-                        // Found the live module, get its info directly and return.
-                        return getInfoFromLiveModule(actualModule);
-                    }
-                }
+                var protoModule = transmitterProtoPart.modules?.Find(s => s.moduleName == "URT_Transmitter" && s.moduleValues.GetInt("transmitterID") == transmitterId);
+                if (protoModule == null) return null;
+
+                var prefabModule = transmitterProtoPart.partInfo.partPrefab.FindModuleImplementing<URT_Transmitter>();
+                if (prefabModule == null) return null;
+
+                return TransmitterInfo.Create(
+                    prefabModule.transmitterArea,                                                           
+                    protoModule.moduleValues.GetFloat("transmitterWavelength", prefabModule.transmitterWavelength), 
+                    prefabModule.transmitterEfficiency,                                                     
+                    transmitterProtoPart.pVesselRef,                                                        
+                    protoModule.moduleValues.GetFloat("transmittedPower", 0f),                              
+                    protoModule.moduleValues.GetBool("isTransmitting", false),                              
+                    prefabModule.buildQuality                                                               
+                );
             }
-
-            // --- STAGE 3: Fallback to parsing ProtoPartSnapshot data ---
-            // This is for parts that are on rails or otherwise not loaded.
-            var protoModuleData = protoPart.modules
-                .Where(s => s.moduleName == moduleNameForProto)
-                .Where(s => s.moduleValues != null && s.moduleValues.HasValue("transmitterId") || s.moduleValues.HasValue("receiverId"))
-                .FirstOrDefault(s => s.moduleValues.GetInt(moduleNameForProto == "URT_Transmitter" ? "transmitterId" : "receiverId") == customId);
-
-            if (protoModuleData != null)
-            {
-                // Use the provided delegate to parse the proto data into the required info struct.
-                return getInfoFromProtoModule(protoModuleData, protoPart.pVesselRef);
-            }
-
-            // --- FINAL FAILURE ---
-            // Debug.LogError($"{classNameForLogging}: All attempts to fetch module with ID {customId} have failed. No live module or valid proto data found.");
             return null;
         }
 
