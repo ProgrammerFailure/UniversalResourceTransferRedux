@@ -428,3 +428,7 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+# Custom
+# Ignore KSP's auto-generated part thumbnails
+**/@thumbs/

@@ -5,11 +5,23 @@
 		<ImplicitUsings>disable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<LangVersion>9.0</LangVersion>
+
+		<!-- 
+		  MSBuild provides '$(SolutionName)' when you compile via a .sln file.
+		  To prevent errors when compiling an individual .csproj directly in an IDE,
+		  we define a custom property 'MyModName' that uses the SolutionName but 
+		  falls back to a hardcoded string if the SolutionName is empty or undefined.
+		-->
+		<MyModName Condition="'$(SolutionName)' != '' And '$(SolutionName)' != '*Undefined*'">$(SolutionName)</MyModName>
+		<MyModName Condition="'$(MyModName)' == ''">UniversalResourceTransferRedux</MyModName>
+
+		<!-- Set KSPBuildTools Properties -->
+		<KSPBT_ModRoot>$(MSBuildThisFileDirectory)../../GameData/$(MyModName)/</KSPBT_ModRoot>
+		<KSPBT_ModPluginFolder>Plugins</KSPBT_ModPluginFolder>
 	</PropertyGroup>
 
 	<ItemGroup>
 		<PackageReference Include="KSPBuildTools" Version="1.1.1" />
-		<!-- Adds targeting packs for Linux cross-compiling. Supposedly necessary? -->
 		<PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="All" />
 	</ItemGroup>
 
