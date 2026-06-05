@@ -3,10 +3,10 @@
   "URL": "https://raw.githubusercontent.com/ProgrammerFailure/UniversalResourceTransferRedux/master/GameData/UniversalResourceTransferRedux/UniversalResourceTransferRedux.version",
   "DOWNLOAD": "https://github.com/ProgrammerFailure/UniversalResourceTransferRedux/releases",
   "VERSION": {
-    "MAJOR": [VERSION_MAJOR],
-    "MINOR": [VERSION_MINOR],
-    "PATCH": [VERSION_PATCH],
-    "BUILD": [VERSION_BUILD]
+    "MAJOR": @VERSION_MAJOR@,
+    "MINOR": @VERSION_MINOR@,
+    "PATCH": @VERSION_PATCH@,
+    "BUILD": @VERSION_BUILD@
   },
   "KSP_VERSION": {
     "MAJOR": 1,
