@@ -12,3 +12,4 @@ jobs:
     uses: KSPModdingLibs/KSPBuildTools/.github/workflows/build.yml@1.1.1
     with:
       solution-file-path: src/UniversalResourceTransferRedux.sln
+      artifacts: 'src/GameData LICENSE* README* CHANGELOG*'
