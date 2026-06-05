@@ -1,0 +1,17 @@
+name: Publish New Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version-string:
+        description: 'New version (e.g., 1.2.0, or use --major, --minor, --patch)'
+        required: true
+        type: string
+
+jobs:
+  create-release:
+    uses: KSPModdingLibs/KSPBuildTools/.github/workflows/create-release.yml@1.1.1
+    with:
+      version-string: ${{ github.event.inputs.version-string }}
+      solution-file-path: src/UniversalResourceTransferRedux.sln
+      artifacts: 'GameData/** LICENSE* README*'
