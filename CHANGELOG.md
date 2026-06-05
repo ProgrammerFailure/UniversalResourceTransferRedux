@@ -5,9 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## 0.0.1 - 2026-06-05
 
 ### Added
+
 - Initial release.
 - Implemented transmission and receiving features.
 - Implemented solver to pick max efficiency links.
@@ -24,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Important for lasers, relativistic charged particle beams, etc.
 
 ### Fixed
+
 - Event handlers deregistering receivers/transmitters on vessel unload
 - Incorrect caching of inactive `URT_Transmitter` modules
 - `transmitterCurrentMaxAmounts` being reset on scene change
