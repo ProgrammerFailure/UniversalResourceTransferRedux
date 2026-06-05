@@ -14,4 +14,4 @@ jobs:
     with:
       version-string: ${{ github.event.inputs.version-string }}
       solution-file-path: src/UniversalResourceTransferRedux.sln
-      artifacts: 'GameData/** LICENSE* README*'
+      artifacts: 'GameData LICENSE* README*'

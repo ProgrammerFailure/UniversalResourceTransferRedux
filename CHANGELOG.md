@@ -12,6 +12,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Implemented transmission and receiving features.
 - Implemented solver to pick max efficiency links.
 - Implemented optional prioritization of active vessels.
+- Added parts:
+  - `bpLargeTransmitterDish` (credit: @AniruddhKSP)
+    - In game name: 'BP-T1 "Microwaving" Power Transmitter'
+    - Basic EMRadiation transmitter dish
+    - Consumes EC
+    - Currently, very unrealistic stats
+  - `bpwr_rx_panel01E`  (credit: @JadeOfMaar)
+    - In game name: "BP-SPRP-048 Electric Power Receiver"
+    - Basic EMRadiation receiver rectenna
+    - Produces EC
+    - Has not received a balancing pass yet
 - Implemented optional fields:
   - `resourceTypeTags` (`URT_Transmitter`, `URT_Receiver`):
     - Semicolon separated tags.
