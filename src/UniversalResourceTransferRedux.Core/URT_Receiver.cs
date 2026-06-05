@@ -13,19 +13,20 @@ namespace UniversalResourceTransferRedux.Core
         // Part properties
         [KSPField(isPersistant = false, guiActive = false)]
         public float receiverDiameter;
-        [KSPField(isPersistant = true, guiActive = true)]
+        [KSPField(isPersistant = false, guiActive = true)]
         public int receiverModuleId;
-        [KSPField(isPersistant = true, guiActive = true, guiName = "Wavelength")]
+        [KSPField(isPersistant = false, guiActive = true, guiName = "Wavelength")]
         public float receiverWavelength;
         [KSPField(isPersistant = false, guiActive = false)]
         public float receiverEfficiency;
         [KSPField(isPersistant = false, guiActive = false)]
         public double receiverTuningFactor;
-        [KSPField(isPersistant = true, guiActive = false)]
+        [KSPField(isPersistant = false, guiActive = false)]
         private string outputResource = "ElectricCharge";
-        [KSPField(isPersistant = true, guiActive = false)]
+        [KSPField(isPersistant = false, guiActive = false)]
         private float outputResourceEnergyFactor = 1.0f; //This is defined as how many EC one unit of output resource is worth
-
+        [KSPField(isPersistant = false, guiActive = false)]
+        private string resourceTypeTags = "EMRadiation";
         //Dynamic values
         [KSPField(isPersistant = true, guiActive = false)]
         public int receiverId = -1;
@@ -140,7 +141,7 @@ namespace UniversalResourceTransferRedux.Core
         //Internal use functions
         internal GenericUtils.ReceiverInfo GetReceiverInfo()
         {
-            return GenericUtils.ReceiverInfo.Create(receiverDiameter, receiverWavelength, receiverEfficiency, receiverTuningFactor);
+            return GenericUtils.ReceiverInfo.Create(receiverDiameter, receiverWavelength, receiverEfficiency, receiverTuningFactor, resourceTypeTags.Split(';'));
         }
 
         private void OnReceiverStateChanged(BaseField field, object obj)

@@ -33,7 +33,13 @@ namespace UniversalResourceTransferRedux.Core
 
         // This is defined as "how many EC is one unit of inputResource worth"
         [KSPField(isPersistant = false, guiActive = false)]
-        public float inputResourceEnergyFactor = 1.0f;
+        private float inputResourceEnergyFactor = 1.0f;
+
+        [KSPField(isPersistant = false, guiActive = false)]
+        private string resourceTypeTags = "EMRadiation";
+
+        [KSPField(isPersistant = false, guiActive = false)]
+        private float diffractionConstant = 1.22F;
 
         //Variables
         private URT_Registry registry;
@@ -191,7 +197,9 @@ namespace UniversalResourceTransferRedux.Core
                 transmitterDiameter,
                 transmitterWavelength,
                 transmitterEfficiency,
-                maxTransmittedPower
+                maxTransmittedPower,
+                resourceTypeTags.Split(';'),
+                diffractionConstant
             );
         }
 

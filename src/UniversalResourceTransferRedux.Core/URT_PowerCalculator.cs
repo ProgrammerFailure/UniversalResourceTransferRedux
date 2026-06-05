@@ -33,7 +33,7 @@ namespace UniversalResourceTransferRedux.Core
             {
                 return (0.0, txInfo.Efficiency * rxInfo.Efficiency * wavelengthMismatchEfficiency); // A zero-area transmitter cannot focus a beam.
             }
-            double divergenceAngleRadians = 1.22 * (txInfo.Wavelength / txInfo.Diameter);
+            double divergenceAngleRadians = txInfo.DiffractionConstant * (txInfo.Wavelength / txInfo.Diameter);
             double beamSpotAreaPrecursor = Math.PI * Math.Pow(Math.Tan(divergenceAngleRadians), 2);
             double beamMismatchPrecursor = (Math.Pow((rxInfo.diameter) / 2, 2) * Math.PI) / beamSpotAreaPrecursor;
 

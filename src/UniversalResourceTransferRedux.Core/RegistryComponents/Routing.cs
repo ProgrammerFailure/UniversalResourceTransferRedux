@@ -169,6 +169,12 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
             }
             var transmitterInfo = txInfo.Value;
             var receiverInfo = rxInfo.Value;
+            if (!transmitterInfo.ResourceTypeTags.Intersect(receiverInfo.ResourceTypeTags).Any())
+            {
+                Debug.Log("[URT] Invalid Link. Discarding.");
+                Debug.Log("[URT]: Issue - transmitter and receiver shared no resource type tags");
+                return null;
+            }
             var efficiency = URT_PowerCalculator.CalculateConstantLinkFactor(transmitterInfo, receiverInfo);
             var maxDistanceSquared = efficiency.Item1 * transmitterInfo.MaxPower * efficiency.Item2;
             if (efficiency.Item1 > 0 && efficiency.Item2 > 0 && maxDistanceSquared > 0)
