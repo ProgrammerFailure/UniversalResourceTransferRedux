@@ -6,9 +6,11 @@
 		<Nullable>enable</Nullable>
 		<LangVersion>9.0</LangVersion>
 	</PropertyGroup>
-	
+
 	<ItemGroup>
 		<PackageReference Include="KSPBuildTools" Version="1.1.1" />
+		<!-- Adds targeting packs for Linux cross-compiling. Supposedly necessary? -->
+		<PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="All" />
 	</ItemGroup>
 
 	<ItemGroup>
