@@ -91,8 +91,9 @@ namespace UniversalResourceTransferRedux.Core
             Fields["requestedPowerGUI"].uiControlFlight.onFieldChanged = OnReceiverStateChanged;
             Fields["isReceiving"].uiControlFlight.onFieldChanged = OnReceiverStateChanged;
             Fields["requestedPowerGUI"].guiUnits = resourceDef.abbreviation + "/s";
-
+            #if DEBUG
             Debug.Log($"[URT]: Receiver with ID {receiverId} fully initialized and ready!");
+            #endif
         }
 
         public void FixedUpdate()
@@ -123,7 +124,7 @@ namespace UniversalResourceTransferRedux.Core
             }
             part.RequestResource(outputResourceHash, -amountBeingReceived);
         }
-
+        #if DEBUG
         //USer functions
         [KSPEvent(active = true, guiActive = true, guiActiveEditor = false, guiName = "Debug dump")]
         private void DebugDump()
@@ -136,7 +137,7 @@ namespace UniversalResourceTransferRedux.Core
         {
             registry.RebuildLinks();
         }
-
+        #endif
 
         //Internal use functions
         internal GenericUtils.ReceiverInfo GetReceiverInfo()

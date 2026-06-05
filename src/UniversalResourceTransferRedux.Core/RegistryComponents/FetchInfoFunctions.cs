@@ -187,6 +187,7 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
             inactiveTransmitterCache.Remove(transmitterId);
         }
         //Below written by AI
+        #if DEBUG
         public void DebugDumpRegistryState()
         {
             System.Text.StringBuilder sb = new System.Text.StringBuilder();
@@ -264,7 +265,7 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
             sb.AppendLine("[URT] =============================================================");
             Debug.Log(sb.ToString());
         }
-
+        #endif
     }
 
 }

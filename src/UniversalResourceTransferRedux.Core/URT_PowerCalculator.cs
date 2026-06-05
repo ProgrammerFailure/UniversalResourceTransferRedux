@@ -55,7 +55,7 @@ namespace UniversalResourceTransferRedux.Core
         }
         //Returns dictionary transmitterId, transmittedPower, receiverId, receivedPower
         public static void ProcessLinks(
-            List<(URT_Link, double)> links, //The double is how much power is BEING RECEIVED through this link
+            List<(URT_Link, double)> links, //The double is how much power is INTENDED TO BE RECEIVED through this link
             Dictionary<int, double> transmitterMaxPowers,
             Dictionary<int, double> receiverReceivedPowers,
             Dictionary<int, double> transmitterTransmittedAmounts,

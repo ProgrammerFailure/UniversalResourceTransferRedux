@@ -234,25 +234,6 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
                     );
                 }
             }
-            //    var TransmitterModuleIdsNode = new ConfigNode();
-            //foreach (var transmitter in transmitterModuleIds)
-            //{
-            //    var transmitterNode = new ConfigNode();
-            //    transmitterNode.AddValue("TransmitterId", transmitter.Key);
-            //    transmitterNode.AddValue("TransmitterModuleId", transmitter.Value);
-            //    TransmitterModuleIdsNode.AddNode("TRANSMITTER", transmitterNode);
-            //}
-            //node.AddNode("TransmitterModuleIdsNode", TransmitterModuleIdsNode);
-
-            //var ReceiverModuleIdsNode = new ConfigNode();
-            //foreach (var receiver in receiverModuleIds)
-            //{
-            //    var receiverNode = new ConfigNode();
-            //    receiverNode.AddValue("ReceiverId", receiver.Key);
-            //    receiverNode.AddValue("ReceiverModuleId", receiver.Value);
-            //    ReceiverModuleIdsNode.AddNode("RECEIVER", receiverNode);
-            //}
-            //node.AddNode("ReceiverModuleIdsNode", ReceiverModuleIdsNode);
 
             RebuildLinks();
         }

@@ -81,7 +81,9 @@ namespace UniversalResourceTransferRedux.Core
         {
             while (URT_Registry.Instance == null)
             {
+#if DEBUG
                 Debug.Log("[URT]: URT_Transmitter: Waiting for URT Registry to be up.");
+#endif
                 yield return null;
             }
             registry = URT_Registry.Instance;
@@ -141,7 +143,9 @@ namespace UniversalResourceTransferRedux.Core
             Fields["maxTransmittedPowerGUI"].guiUnits = resourceDef.abbreviation + "/s";
 
             OnTransmissionStateChanged(null, null);
+#if DEBUG
             Debug.Log($"[URT]: Transmitter with ID {transmitterID} fully initialized and ready!");
+#endif
         }
 
         public void FixedUpdate()
@@ -167,12 +171,15 @@ namespace UniversalResourceTransferRedux.Core
             if (vesselCurrentResourceAmount < requiredAmount)
             {
                 isTransmitting = false;
+#if DEBUG
                 Debug.Log($"[URT] Transmitter with ID {transmitterID}: Not enough power!");
+#endif
                 OnTransmissionStateChanged(null, null);
                 return;
             }
             part.RequestResource(inputResourceHash, requiredAmount);
         }
+#if DEBUG
         //User functions
         [KSPEvent(active = true, guiActive = true, guiActiveEditor = false, guiName = "Debug dump")]
         private void DebugDump()
@@ -185,11 +192,7 @@ namespace UniversalResourceTransferRedux.Core
         {
             registry.RebuildLinks();
         }
-        // Utilities
-        void OnHotLoad()
-        {
-            registry = URT_Registry.Instance;
-        }
+#endif
 
         public TransmitterInfo GetTransmitterInfo()
         {
