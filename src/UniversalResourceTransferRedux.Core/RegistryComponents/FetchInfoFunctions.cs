@@ -69,9 +69,20 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
             if (inactiveTransmitterCache.TryGetValue(transmitterId, out var transmitterProtoPart) &&
                 transmitterProtoPart != null)
             {
-                return transmitterProtoPart.pVesselRef.position;
+                return GenericUtils.GetProtoVesselWorldPosAtTime(transmitterProtoPart.pVesselRef, time);
             }
             RefreshCacheTransmitter(transmitterId);
+            
+            if (activeTransmitterCache.TryGetValue(transmitterId, out var transmitterModule2) && transmitterModule2 != null)
+            {
+                return transmitterModule2.vessel.GetWorldPos3D();
+            }
+            if (inactiveTransmitterCache.TryGetValue(transmitterId, out var transmitterProtoPart2) &&
+                transmitterProtoPart2 != null)
+            {
+                return GenericUtils.GetProtoVesselWorldPosAtTime(transmitterProtoPart2.pVesselRef, time);
+            }
+
             return null;
         }
 
@@ -84,9 +95,20 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
             if (inactiveReceiverCache.TryGetValue(receiverID, out var receiverProtoPart) &&
                 receiverProtoPart != null)
             {
-                return receiverProtoPart.pVesselRef.position;
+                return GenericUtils.GetProtoVesselWorldPosAtTime(receiverProtoPart.pVesselRef, time);
             }
             RefreshCacheReceiver(receiverID);
+
+            if (activeReceiverCache.TryGetValue(receiverID, out var receiverModule2) && receiverModule2 != null)
+            {
+                return receiverModule2.vessel.GetWorldPos3D();
+            }
+            if (inactiveReceiverCache.TryGetValue(receiverID, out var receiverProtoPart2) &&
+                receiverProtoPart2 != null)
+            {
+                return GenericUtils.GetProtoVesselWorldPosAtTime(receiverProtoPart2.pVesselRef, time);
+            }
+
             return null;
         }
 
@@ -120,6 +142,7 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
                 s.moduleValues.GetInt("receiverId") == receiverId) != null)
             {
                 inactiveReceiverCache[receiverId] = receiverFoundProtoPart;
+                return;
             }
             inactiveReceiverCache.Remove(receiverId);
         }

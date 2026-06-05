@@ -164,5 +164,41 @@ namespace UniversalResourceTransferRedux.Core
             }
         }
 
+
+        public static Vector3d? GetProtoVesselWorldPosAtTime(ProtoVessel pv, double universalTime)
+        {
+            if (pv.vesselRef != null)
+            {
+                return pv.vesselRef.GetWorldPos3D();
+            }
+
+            var referenceBody = FlightGlobals.Bodies[pv.orbitSnapShot.ReferenceBodyIndex];
+
+            if (pv.landed || pv.splashed)
+            {
+                return referenceBody.GetWorldSurfacePosition(pv.latitude, pv.longitude, pv.altitude);
+            }
+            LoadSnapshotIntoTemp(pv.orbitSnapShot, referenceBody);
+
+            Vector3d relativePosition = tempOrbit.getPositionAtUT(universalTime);
+            return relativePosition + referenceBody.position;
+        }
+
+        private static Orbit tempOrbit = new Orbit();
+
+        private static void LoadSnapshotIntoTemp(OrbitSnapshot snap, CelestialBody referenceBody)
+        {
+            tempOrbit.inclination = snap.inclination;
+            tempOrbit.eccentricity = snap.eccentricity;
+            tempOrbit.semiMajorAxis = snap.semiMajorAxis;
+            tempOrbit.LAN = snap.LAN;
+            tempOrbit.argumentOfPeriapsis = snap.argOfPeriapsis;
+            tempOrbit.meanAnomalyAtEpoch = snap.meanAnomalyAtEpoch;
+            tempOrbit.epoch = snap.epoch;
+            tempOrbit.referenceBody = referenceBody;
+
+            // Recalculates internal orbital constants (period, mean motion, etc.)
+            tempOrbit.Init();
+        }
     }
 }

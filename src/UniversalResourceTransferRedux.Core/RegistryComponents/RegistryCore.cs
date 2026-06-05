@@ -37,6 +37,7 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
         //Instance
         public static RegistryComponents.URT_Registry Instance = null;
 
+        private double time;
         [KSPField(isPersistant = true)]
         private int nextTransmitterInt;
 
@@ -57,18 +58,19 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
                     Destroy(this);
                 }
             }
-            GameEvents.onPartDestroyed.Add(OnPartDestroyed);
+            GameEvents.onPartDie.Add(OnPartDie);
             GameEvents.onVesselChange.Add(OnActiveVesselChanged);
-            GameEvents.onVesselUnloaded.Add(OnVesselLoadedOrUnloaded);
-            GameEvents.onVesselLoaded.Add(OnVesselLoadedOrUnloaded);
+            GameEvents.onVesselUnloaded.Add(OnVesselUnloaded);
+            GameEvents.onVesselLoaded.Add(OnVesselLoaded);
             GameEvents.OnVesselRecoveryRequested.Add(OnVesselDestroyedOrRecovered);
-            GameEvents.onVesselDestroy.Add(OnVesselDestroyedOrRecovered);
+            GameEvents.onVesselWillDestroy.Add(OnVesselDestroyedOrRecovered);
             
             StartCoroutine(RunNetworkRebuild());
         }
 
         public void FixedUpdate()
         {
+            time = Planetarium.GetUniversalTime();
             URT_PowerCalculator.ProcessLinks(ActiveLinks,
                 transmitterCurrentMaxAmounts,
                 receiverReceivedAmounts,
@@ -84,14 +86,14 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
         }
         public void OnDisable()
         {
-            GameEvents.onPartDestroyed.Remove(OnPartDestroyed);
+            GameEvents.onPartDie.Remove(OnPartDie);
             GameEvents.onVesselChange.Remove(OnActiveVesselChanged);
-            GameEvents.onVesselUnloaded.Remove(OnVesselLoadedOrUnloaded);
-            GameEvents.onVesselLoaded.Remove(OnVesselLoadedOrUnloaded);
+            GameEvents.onVesselUnloaded.Remove(OnVesselUnloaded);
+            GameEvents.onVesselLoaded.Remove(OnVesselLoaded);
             GameEvents.OnVesselRecoveryRequested.Remove(OnVesselDestroyedOrRecovered);
-            GameEvents.onVesselDestroy.Remove(OnVesselDestroyedOrRecovered);
+            GameEvents.onVesselWillDestroy.Remove(OnVesselDestroyedOrRecovered);
         }
-        private void OnPartDestroyed(Part p)
+        private void OnPartDie(Part p)
         {
             bool needRebuild = false;
             var tempManualTransmitters = manualTransmittersToTargets;
@@ -148,9 +150,9 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
             RebuildLinks();
         }
 
-        private void OnVesselLoadedOrUnloaded(Vessel loadedOrUnloadedVessel)
+        private void OnVesselLoaded(Vessel loadedVessel)
         {
-            foreach (var receiverModuleList in loadedOrUnloadedVessel.parts.Select(s => s.FindModulesImplementing<URT_Receiver>()))
+            foreach (var receiverModuleList in loadedVessel.parts.Select(s => s.FindModulesImplementing<URT_Receiver>()))
             {
                 foreach (var receiverModule in receiverModuleList)
                 {
@@ -158,12 +160,26 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
                     inactiveReceiverCache.Remove(receiverModule.receiverId);
                 }
             }
-            foreach (var transmitterModuleList in loadedOrUnloadedVessel.parts.Select(s => s.FindModulesImplementing<URT_Transmitter>()))
+            foreach (var transmitterModuleList in loadedVessel.parts.Select(s => s.FindModulesImplementing<URT_Transmitter>()))
             {
                 foreach (var transmitterModule in transmitterModuleList)
                 {
                     activeTransmitterCache[transmitterModule.transmitterID] = transmitterModule;
                     inactiveTransmitterCache.Remove(transmitterModule.transmitterID);
+                }
+            }
+        }
+        private void OnVesselUnloaded(Vessel unloadedVessel)
+        { 
+            foreach (var p in unloadedVessel.parts)
+            {
+                foreach (var rm in p.FindModulesImplementing<URT_Receiver>())
+                {
+                    activeReceiverCache.Remove(rm.receiverId);
+                }
+                foreach (var tm in p.FindModulesImplementing<URT_Transmitter>())
+                {
+                    activeTransmitterCache.Remove(tm.transmitterID);
                 }
             }
         }

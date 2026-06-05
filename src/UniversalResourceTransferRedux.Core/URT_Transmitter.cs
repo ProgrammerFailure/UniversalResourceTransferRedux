@@ -57,6 +57,7 @@ namespace UniversalResourceTransferRedux.Core
         [KSPField(isPersistant = true, guiActive = true, guiName = "Manual targeting?")]
         [UI_Toggle(affectSymCounterparts = UI_Scene.Editor, enabledText = "Manually targetting", disabledText = "Automatically targetting")]
         private bool isManuallyTargeting;
+
         //
         //      [KSPField(isPersistant = true, guiActive = true, guiName = "Manual transmission target")]
         //    [UI_Cycle(affectSymCounterparts = UI_Scene.Editor, stateNames = new string[1] { "No valid receivers" })]
@@ -110,8 +111,6 @@ namespace UniversalResourceTransferRedux.Core
             }
             inputResourceHash = resourceDef.id;
             registry.RegisterActiveTransmitter(transmitterID, this);
-            OnTransmissionStateChanged(null, null);
-
 
             Fields["isTransmitting"].uiControlFlight.onFieldChanged = OnTransmissionStateChanged;
             Fields["maxTransmittedPowerGUI"].uiControlFlight.onFieldChanged = OnTransmissionStateChanged;
@@ -135,12 +134,18 @@ namespace UniversalResourceTransferRedux.Core
             (Fields["maxTransmittedPowerGUI"].uiControlFlight as UI_FloatRange).stepIncrement = maxTransmittedPower * inputResourceEnergyFactor / 100;
             Fields["maxTransmittedPowerGUI"].guiUnits = resourceDef.abbreviation + "/s";
 
+            OnTransmissionStateChanged(null, null);
             Debug.Log($"[URT]: Transmitter with ID {transmitterID} fully initialized and ready!");
         }
 
         public void FixedUpdate()
         {
             if (registry == null || !isTransmitting || maxTransmittedPowerGUI == 0) return;
+            vessel.GetConnectedResourceTotals(inputResourceHash,
+                out double vesselCurrentResourceAmount,
+                out double vesselCurrentResourceMaxAmount
+            );
+            if (vesselCurrentResourceMaxAmount <= 0) return; //Teardown frame protection
             var currentTime = Planetarium.GetUniversalTime();
             if (lastUpdateTime == 0)
             {
@@ -152,10 +157,7 @@ namespace UniversalResourceTransferRedux.Core
             currentTransmittedAmount = registry.transmitterTransmittedAmounts[transmitterID];
             var requiredAmount = (currentTransmittedAmount / inputResourceEnergyFactor) * deltaTime;
 
-            vessel.GetConnectedResourceTotals(inputResourceHash,
-                out double vesselCurrentResourceAmount,
-                out double vesselCurrentResourceMaxAmount
-            );
+            
             if (vesselCurrentResourceAmount < requiredAmount)
             {
                 isTransmitting = false;

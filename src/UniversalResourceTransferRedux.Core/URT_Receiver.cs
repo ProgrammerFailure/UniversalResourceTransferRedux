@@ -15,7 +15,7 @@ namespace UniversalResourceTransferRedux.Core
         public float receiverDiameter;
         [KSPField(isPersistant = true, guiActive = true)]
         public int receiverModuleId;
-[KSPField(isPersistant = true, guiActive = true, guiName = "Wavelength")]
+        [KSPField(isPersistant = true, guiActive = true, guiName = "Wavelength")]
         public float receiverWavelength;
         [KSPField(isPersistant = false, guiActive = false)]
         public float receiverEfficiency;
@@ -65,7 +65,7 @@ namespace UniversalResourceTransferRedux.Core
                 try
                 {
                     receiverId = registry.RegisterNewReceiver(part.flightID, this, GetReceiverInfo(), receiverModuleId);
-                    
+
                 }
                 catch (InvalidOperationException ex)
                 {
@@ -97,6 +97,11 @@ namespace UniversalResourceTransferRedux.Core
         public void FixedUpdate()
         {
             if (registry == null || !isReceiving || requestedPowerGUI == 0) return;
+            vessel.GetConnectedResourceTotals(outputResourceHash,
+                 out double vesselCurrentResourceAmount,
+                 out double vesselCurrentResourceMaxAmount
+            );
+            if (vesselCurrentResourceMaxAmount <= 0) return;
             var currentTime = Planetarium.GetUniversalTime();
             if (lastUpdateTime == 0)
             {
@@ -106,11 +111,8 @@ namespace UniversalResourceTransferRedux.Core
             lastUpdateTime = currentTime;
 
             var amountBeingReceived = (registry.receiverReceivedAmounts[receiverId] / outputResourceEnergyFactor) * deltaTime;
-            
-            vessel.GetConnectedResourceTotals(outputResourceHash,
-                out double vesselCurrentResourceAmount,
-                out double vesselCurrentResourceMaxAmount
-            );
+
+
             var spareCapacity = vesselCurrentResourceMaxAmount - vesselCurrentResourceAmount;
             if (amountBeingReceived > spareCapacity)
             {
