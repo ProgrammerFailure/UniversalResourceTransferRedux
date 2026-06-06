@@ -66,11 +66,10 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
             GameEvents.onVesselLoaded.Add(OnVesselLoaded);
             GameEvents.OnVesselRecoveryRequested.Add(OnVesselDestroyedOrRecovered);
             GameEvents.onVesselWillDestroy.Add(OnVesselDestroyedOrRecovered);
+            GameEvents.onVesselWasModified.Add(OnVesselWasModified);
             
             StartCoroutine(RunNetworkRebuild());
         }
-
-
         public void OnDisable()
         {
             GameEvents.onPartDie.Remove(OnPartDie);
@@ -79,6 +78,7 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
             GameEvents.onVesselLoaded.Remove(OnVesselLoaded);
             GameEvents.OnVesselRecoveryRequested.Remove(OnVesselDestroyedOrRecovered);
             GameEvents.onVesselWillDestroy.Remove(OnVesselDestroyedOrRecovered);
+            GameEvents.onVesselWasModified.Remove(OnVesselWasModified);
         }
         public void FixedUpdate()
         {

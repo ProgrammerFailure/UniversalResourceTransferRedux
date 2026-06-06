@@ -148,5 +148,24 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
 
             if (needRebuild) RebuildLinks();
         }
+
+        private void OnVesselWasModified(Vessel v)
+        {
+            List<URT_Transmitter> transmitters = new();
+            List<URT_Receiver> receivers = new();
+            var linksToRemove = new List<URT_Link>();
+            foreach (var link in Links)
+            {
+                if (transmitters.Any(s => s.transmitterID == link.TransmitterId) &&
+                    receivers.Any(s => s.receiverId == link.ReceiverId))
+                {
+                    linksToRemove.Add(link);
+                }
+            }
+            foreach (var link in linksToRemove)
+            {
+                Links.Remove(link);
+            }
+        }
     }
 }

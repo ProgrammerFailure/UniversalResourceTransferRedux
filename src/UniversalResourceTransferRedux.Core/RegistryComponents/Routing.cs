@@ -167,6 +167,10 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
             {
                 throw new InvalidDataException("txInfo did not have a value!");
             }
+            if (GetTransmitterWorldPos(transmitterId) == GetReceiverWorldPos(receiverId))
+            {
+                return null; //Same vessel
+            }
             var transmitterInfo = txInfo.Value;
             var receiverInfo = rxInfo.Value;
             if (!transmitterInfo.ResourceTypeTags.Intersect(receiverInfo.ResourceTypeTags).Any())
