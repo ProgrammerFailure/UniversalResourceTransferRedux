@@ -122,17 +122,13 @@ namespace UniversalResourceTransferRedux.Core
             public readonly double TuningFactor;
             public readonly string[] ResourceTypeTags;
 
-            private ReceiverInfo(float diameter, float wavelength, float efficiency, double tuningFactor, string[] resourceTypeTags)
+            public ReceiverInfo(float diameter, float wavelength, float efficiency, double tuningFactor, string[] resourceTypeTags)
             {
                 this.diameter = diameter;
                 Wavelength = wavelength;
                 Efficiency = efficiency;
                 TuningFactor = tuningFactor;
                 ResourceTypeTags = resourceTypeTags;
-            }
-            public static ReceiverInfo Create(float diameter, float wavelength, float efficiency, double tuningFactor, string[] resourceTypeTags)
-            {
-                return new ReceiverInfo(diameter, wavelength, efficiency, tuningFactor, resourceTypeTags);
             }
 
             public override string ToString()
@@ -149,7 +145,7 @@ namespace UniversalResourceTransferRedux.Core
             public readonly float MaxPower;
             public readonly string[] ResourceTypeTags;
             public readonly float DiffractionConstant;
-            private TransmitterInfo(float diameter, float wavelength, float efficiency, float maxPower, string[] resourceTypeTags, float diffractionConstant)
+            public TransmitterInfo(float diameter, float wavelength, float efficiency, float maxPower, string[] resourceTypeTags, float diffractionConstant)
             {
                 Diameter = diameter;
                 Wavelength = wavelength;
@@ -157,10 +153,6 @@ namespace UniversalResourceTransferRedux.Core
                 MaxPower = maxPower;
                 ResourceTypeTags = resourceTypeTags;
                 DiffractionConstant = diffractionConstant;
-            }
-            public static TransmitterInfo Create(float diameter, float wavelength, float efficiency, float maxPower, string[] resourceTypeTags, float diffractionConstant)
-            {
-                return new TransmitterInfo(diameter, wavelength, efficiency, maxPower, resourceTypeTags, diffractionConstant);
             }
 
             public override string ToString()

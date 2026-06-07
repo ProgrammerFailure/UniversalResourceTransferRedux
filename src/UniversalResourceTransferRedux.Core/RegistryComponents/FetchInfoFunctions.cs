@@ -33,8 +33,8 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
                 s.moduleValues.GetInt("transmitterID") == transmitterId) is ProtoPartModuleSnapshot transmitterProtoPartModule)
             {
                 return transmitterProtoPart.partPrefab
-                    .FindModulesImplementing<URT_Transmitter>()
-                    .Find(s => s.transmitterModuleId == transmitterModuleIds[transmitterId])
+                    .FindModulesImplementing<IURT_Transmitter>()
+                    .Find(s => s.ModuleID == transmitterModuleIds[transmitterId])
                     .GetTransmitterInfo();
             }
             RefreshCacheTransmitter(transmitterId);
@@ -52,8 +52,8 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
                 s.moduleValues.GetInt("receiverId") == receiverID) is ProtoPartModuleSnapshot receiverProtoPartModule)
             {
                 return receiverProtoPart.partPrefab
-                .FindModulesImplementing<URT_Receiver>()
-                .Find(s => s.receiverModuleId == receiverModuleIds[receiverID])
+                .FindModulesImplementing<IURT_Receiver>()
+                .Find(s => s.ModuleId == receiverModuleIds[receiverID])
                 .GetReceiverInfo();
             }
             RefreshCacheReceiver(receiverID);
@@ -64,7 +64,7 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
         {
             if (activeTransmitterCache.TryGetValue(transmitterId, out var transmitterModule) && transmitterModule != null)
             {
-                return transmitterModule.vessel.GetWorldPos3D();
+                return transmitterModule.Vessel.GetWorldPos3D();
             }
             if (inactiveTransmitterCache.TryGetValue(transmitterId, out var transmitterProtoPart) &&
                 transmitterProtoPart != null)
@@ -75,7 +75,7 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
             
             if (activeTransmitterCache.TryGetValue(transmitterId, out var transmitterModule2) && transmitterModule2 != null)
             {
-                return transmitterModule2.vessel.GetWorldPos3D();
+                return transmitterModule2.Vessel.GetWorldPos3D();
             }
             if (inactiveTransmitterCache.TryGetValue(transmitterId, out var transmitterProtoPart2) &&
                 transmitterProtoPart2 != null)
@@ -90,7 +90,7 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
         {
             if (activeReceiverCache.TryGetValue(receiverID, out var receiverModule) && receiverModule != null)
             {
-                return receiverModule.vessel.GetWorldPos3D();
+                return receiverModule.Vessel.GetWorldPos3D();
             }
             if (inactiveReceiverCache.TryGetValue(receiverID, out var receiverProtoPart) &&
                 receiverProtoPart != null)
@@ -101,7 +101,7 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
 
             if (activeReceiverCache.TryGetValue(receiverID, out var receiverModule2) && receiverModule2 != null)
             {
-                return receiverModule2.vessel.GetWorldPos3D();
+                return receiverModule2.Vessel.GetWorldPos3D();
             }
             if (inactiveReceiverCache.TryGetValue(receiverID, out var receiverProtoPart2) &&
                 receiverProtoPart2 != null)
@@ -121,8 +121,8 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
                 return;
             }
             if (FlightGlobals.FindPartByID(receiverFlightIds[receiverId]) is Part receiverPart &&
-                receiverPart.FindModulesImplementing<URT_Receiver>()
-                .Find(s => s.receiverId == receiverId) is URT_Receiver receiverFoundModule)
+                receiverPart.FindModulesImplementing<IURT_Receiver>()
+                .Find(s => s.ReceiverId == receiverId) is IURT_Receiver receiverFoundModule)
             {
                 activeReceiverCache[receiverId] = receiverFoundModule;
                 inactiveReceiverCache.Remove(receiverId);
@@ -132,13 +132,13 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
 
             if (inactiveReceiverCache.TryGetValue(receiverId, out var receiverProtoPart) &&
                 receiverProtoPart != null &&
-                receiverProtoPart.modules.Find(s => s.moduleName == "URT_Receiver" &&
+                receiverProtoPart.modules.Find(s => URT_AssemblyScanner.CompatibleReceivers.Contains(s.moduleName) &&
                 s.moduleValues.GetInt("receiverId") == receiverId) != null)
             {
                 return;
             }
             if (FlightGlobals.FindProtoPartByID(receiverFlightIds[receiverId]) is ProtoPartSnapshot receiverFoundProtoPart &&
-                receiverFoundProtoPart.modules.Find(s => s.moduleName == "URT_Receiver" &&
+                receiverFoundProtoPart.modules.Find(s => URT_AssemblyScanner.CompatibleReceivers.Contains(s.moduleName) &&
                 s.moduleValues.GetInt("receiverId") == receiverId) != null)
             {
                 inactiveReceiverCache[receiverId] = receiverFoundProtoPart;
@@ -155,8 +155,8 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
             }
 
             if (FlightGlobals.FindPartByID(transmitterFlightIds[transmitterId]) is Part transmitterPart &&
-                transmitterPart.FindModulesImplementing<URT_Transmitter>()
-                .Find(s => s.transmitterID == transmitterId) is URT_Transmitter transmitterFoundModule
+                transmitterPart.FindModulesImplementing<IURT_Transmitter>()
+                .Find(s => s.TransmitterID == transmitterId) is IURT_Transmitter transmitterFoundModule
                 )
             {
                 activeTransmitterCache[transmitterId] = transmitterFoundModule;
@@ -168,7 +168,7 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
             if (inactiveTransmitterCache.TryGetValue(transmitterId, out var transmitterProtoPart) &&
                 transmitterProtoPart != null &&
                 transmitterProtoPart.modules.Find(s =>
-                s.moduleName == "URT_Transmitter" &&
+                URT_AssemblyScanner.CompatibleTransmitters.Contains(s.moduleName) &&
                 s.moduleValues.GetInt("transmitterID") == transmitterId
                 ) != null)
             {
@@ -177,7 +177,7 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
             }
             if (FlightGlobals.FindProtoPartByID(transmitterFlightIds[transmitterId]) is ProtoPartSnapshot transmitterFoundProtoPart &&
                 transmitterFoundProtoPart.modules.Find(s =>
-                s.moduleName == "URT_Transmitter" &&
+                URT_AssemblyScanner.CompatibleTransmitters.Contains(s.moduleName) &&
                 s.moduleValues.GetInt("transmitterID") == transmitterId
                 ) != null)
             {
@@ -204,7 +204,7 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
                 double sentPowerWatts = transmitterTransmittedAmounts.TryGetValue(tId, out double sentPowVal) ? sentPowVal : 0.0;
 
                 string cacheState = "Unloaded";
-                if (activeTransmitterCache.TryGetValue(tId, out URT_Transmitter module) && module != null)
+                if (activeTransmitterCache.TryGetValue(tId, out IURT_Transmitter module) && module != null)
                 {
                     cacheState = "Active/Loaded";
                 }
@@ -227,7 +227,7 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
                 double receivedPowerWatts = receiverReceivedAmounts.TryGetValue(rId, out double recPowVal) ? recPowVal : 0.0;
 
                 string cacheState = "Unloaded";
-                if (activeReceiverCache.TryGetValue(rId, out URT_Receiver module) && module != null)
+                if (activeReceiverCache.TryGetValue(rId, out IURT_Receiver module) && module != null)
                 {
                     cacheState = "Active/Loaded";
                 }

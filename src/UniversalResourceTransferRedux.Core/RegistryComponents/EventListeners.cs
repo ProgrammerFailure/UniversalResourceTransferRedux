@@ -13,41 +13,41 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
             bool needRebuild = false;
             var tempManualTransmitters = manualTransmittersToTargets;
             var linksTemp = Links.ToArray();
-            foreach (var receiverModule in p.FindModulesImplementing<URT_Receiver>())
+            foreach (var receiverModule in p.FindModulesImplementing<IURT_Receiver>())
             {
                 needRebuild = true;
-                receiverFlightIds.Remove(receiverModule.receiverId);
-                activeReceiverCache.Remove(receiverModule.receiverId);
-                inactiveReceiverCache.Remove(receiverModule.receiverId);
-                receiversOnActiveVessel.Remove(receiverModule.receiverId);
-                receiverReceivedAmounts.Remove(receiverModule.receiverId);
-                receiverRequestedAmounts.Remove(receiverModule.receiverId);
+                receiverFlightIds.Remove(receiverModule.ReceiverId);
+                activeReceiverCache.Remove(receiverModule.ReceiverId);
+                inactiveReceiverCache.Remove(receiverModule.ReceiverId);
+                receiversOnActiveVessel.Remove(receiverModule.ReceiverId);
+                receiverReceivedAmounts.Remove(receiverModule.ReceiverId);
+                receiverRequestedAmounts.Remove(receiverModule.ReceiverId);
                 foreach (var kvp in tempManualTransmitters)
                 {
-                    if (kvp.Value == receiverModule.receiverId) manualTransmittersToTargets.Remove(kvp.Key);
+                    if (kvp.Value == receiverModule.ReceiverId) manualTransmittersToTargets.Remove(kvp.Key);
                 }
 
                 foreach (var link in linksTemp)
                 {
-                    if (link.ReceiverId == receiverModule.receiverId) Links.Remove(link);
+                    if (link.ReceiverId == receiverModule.ReceiverId) Links.Remove(link);
                 }
             }
-            foreach (var transmitterModule in p.FindModulesImplementing<URT_Transmitter>())
+            foreach (var transmitterModule in p.FindModulesImplementing<IURT_Transmitter>())
             {
                 needRebuild = true;
-                transmitterFlightIds.Remove(transmitterModule.transmitterID);
-                activeTransmitterCache.Remove(transmitterModule.transmitterID);
-                inactiveTransmitterCache.Remove(transmitterModule.transmitterID);
-                reservedForActiveVesselTransmitters.Remove(transmitterModule.transmitterID);
-                transmitterTransmittedAmounts.Remove(transmitterModule.transmitterID);
-                transmitterCurrentMaxAmounts.Remove(transmitterModule.transmitterID);
+                transmitterFlightIds.Remove(transmitterModule.TransmitterID);
+                activeTransmitterCache.Remove(transmitterModule.TransmitterID);
+                inactiveTransmitterCache.Remove(transmitterModule.TransmitterID);
+                reservedForActiveVesselTransmitters.Remove(transmitterModule.TransmitterID);
+                transmitterTransmittedAmounts.Remove(transmitterModule.TransmitterID);
+                transmitterCurrentMaxAmounts.Remove(transmitterModule.TransmitterID);
                 foreach (var kvp in tempManualTransmitters)
                 {
-                    if (kvp.Key == transmitterModule.transmitterID) manualTransmittersToTargets.Remove(transmitterModule.transmitterID);
+                    if (kvp.Key == transmitterModule.TransmitterID) manualTransmittersToTargets.Remove(transmitterModule.TransmitterID);
                 }
                 foreach (var link in linksTemp)
                 {
-                    if (link.TransmitterId == transmitterModule.transmitterID) Links.Remove(link);
+                    if (link.TransmitterId == transmitterModule.TransmitterID) Links.Remove(link);
                 }
             }
             if (needRebuild) RebuildLinks();
@@ -55,11 +55,11 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
         private void OnActiveVesselChanged(Vessel newActiveVessel)
         {
             receiversOnActiveVessel.Clear();
-            foreach (var receiverModuleList in newActiveVessel.parts.Select(s => s.FindModulesImplementing<URT_Receiver>()))
+            foreach (var receiverModuleList in newActiveVessel.parts.Select(s => s.FindModulesImplementing<IURT_Receiver>()))
             {
                 foreach (var receiverModule in receiverModuleList)
                 {
-                    receiversOnActiveVessel.Add(receiverModule.receiverId);
+                    receiversOnActiveVessel.Add(receiverModule.ReceiverId);
                 }
             }
             RebuildLinks();
@@ -67,20 +67,20 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
 
         private void OnVesselLoaded(Vessel loadedVessel)
         {
-            foreach (var receiverModuleList in loadedVessel.parts.Select(s => s.FindModulesImplementing<URT_Receiver>()))
+            foreach (var receiverModuleList in loadedVessel.parts.Select(s => s.FindModulesImplementing<IURT_Receiver>()))
             {
                 foreach (var receiverModule in receiverModuleList)
                 {
-                    activeReceiverCache[receiverModule.receiverId] = receiverModule;
-                    inactiveReceiverCache.Remove(receiverModule.receiverId);
+                    activeReceiverCache[receiverModule.ReceiverId] = receiverModule;
+                    inactiveReceiverCache.Remove(receiverModule.ReceiverId);
                 }
             }
-            foreach (var transmitterModuleList in loadedVessel.parts.Select(s => s.FindModulesImplementing<URT_Transmitter>()))
+            foreach (var transmitterModuleList in loadedVessel.parts.Select(s => s.FindModulesImplementing<IURT_Transmitter>()))
             {
                 foreach (var transmitterModule in transmitterModuleList)
                 {
-                    activeTransmitterCache[transmitterModule.transmitterID] = transmitterModule;
-                    inactiveTransmitterCache.Remove(transmitterModule.transmitterID);
+                    activeTransmitterCache[transmitterModule.TransmitterID] = transmitterModule;
+                    inactiveTransmitterCache.Remove(transmitterModule.TransmitterID);
                 }
             }
         }
@@ -88,13 +88,13 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
         {
             foreach (var p in unloadedVessel.parts)
             {
-                foreach (var rm in p.FindModulesImplementing<URT_Receiver>())
+                foreach (var rm in p.FindModulesImplementing<IURT_Receiver>())
                 {
-                    activeReceiverCache.Remove(rm.receiverId);
+                    activeReceiverCache.Remove(rm.ReceiverId);
                 }
-                foreach (var tm in p.FindModulesImplementing<URT_Transmitter>())
+                foreach (var tm in p.FindModulesImplementing<IURT_Transmitter>())
                 {
-                    activeTransmitterCache.Remove(tm.transmitterID);
+                    activeTransmitterCache.Remove(tm.TransmitterID);
                 }
             }
         }
@@ -106,41 +106,41 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
             var linksTemp = Links.ToArray();
             foreach (var p in v.parts)
             {
-                foreach (var receiverModule in p.FindModulesImplementing<URT_Receiver>())
+                foreach (var receiverModule in p.FindModulesImplementing<IURT_Receiver>())
                 {
                     needRebuild = true;
-                    receiverFlightIds.Remove(receiverModule.receiverId);
-                    activeReceiverCache.Remove(receiverModule.receiverId);
-                    inactiveReceiverCache.Remove(receiverModule.receiverId);
-                    receiversOnActiveVessel.Remove(receiverModule.receiverId);
-                    receiverReceivedAmounts.Remove(receiverModule.receiverId);
-                    receiverRequestedAmounts.Remove(receiverModule.receiverId);
+                    receiverFlightIds.Remove(receiverModule.ReceiverId);
+                    activeReceiverCache.Remove(receiverModule.ReceiverId);
+                    inactiveReceiverCache.Remove(receiverModule.ReceiverId);
+                    receiversOnActiveVessel.Remove(receiverModule.ReceiverId);
+                    receiverReceivedAmounts.Remove(receiverModule.ReceiverId);
+                    receiverRequestedAmounts.Remove(receiverModule.ReceiverId);
                     foreach (var kvp in tempManualTransmitters)
                     {
-                        if (kvp.Value == receiverModule.receiverId) manualTransmittersToTargets.Remove(kvp.Key);
+                        if (kvp.Value == receiverModule.ReceiverId) manualTransmittersToTargets.Remove(kvp.Key);
                     }
 
                     foreach (var link in linksTemp)
                     {
-                        if (link.ReceiverId == receiverModule.receiverId) Links.Remove(link);
+                        if (link.ReceiverId == receiverModule.ReceiverId) Links.Remove(link);
                     }
                 }
-                foreach (var transmitterModule in p.FindModulesImplementing<URT_Transmitter>())
+                foreach (var transmitterModule in p.FindModulesImplementing<IURT_Transmitter>())
                 {
                     needRebuild = true;
-                    transmitterFlightIds.Remove(transmitterModule.transmitterID);
-                    activeTransmitterCache.Remove(transmitterModule.transmitterID);
-                    inactiveTransmitterCache.Remove(transmitterModule.transmitterID);
-                    reservedForActiveVesselTransmitters.Remove(transmitterModule.transmitterID);
-                    transmitterTransmittedAmounts.Remove(transmitterModule.transmitterID);
-                    transmitterCurrentMaxAmounts.Remove(transmitterModule.transmitterID);
+                    transmitterFlightIds.Remove(transmitterModule.TransmitterID);
+                    activeTransmitterCache.Remove(transmitterModule.TransmitterID);
+                    inactiveTransmitterCache.Remove(transmitterModule.TransmitterID);
+                    reservedForActiveVesselTransmitters.Remove(transmitterModule.TransmitterID);
+                    transmitterTransmittedAmounts.Remove(transmitterModule.TransmitterID);
+                    transmitterCurrentMaxAmounts.Remove(transmitterModule.TransmitterID);
                     foreach (var kvp in tempManualTransmitters)
                     {
-                        if (kvp.Key == transmitterModule.transmitterID) manualTransmittersToTargets.Remove(transmitterModule.transmitterID);
+                        if (kvp.Key == transmitterModule.TransmitterID) manualTransmittersToTargets.Remove(transmitterModule.TransmitterID);
                     }
                     foreach (var link in linksTemp)
                     {
-                        if (link.TransmitterId == transmitterModule.transmitterID) Links.Remove(link);
+                        if (link.TransmitterId == transmitterModule.TransmitterID) Links.Remove(link);
                     }
                 }
             }
@@ -151,13 +151,13 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
 
         private void OnVesselWasModified(Vessel v)
         {
-            List<URT_Transmitter> transmitters = new();
-            List<URT_Receiver> receivers = new();
+            List<IURT_Transmitter> transmitters = new();
+            List<IURT_Receiver> receivers = new();
             var linksToRemove = new List<URT_Link>();
             foreach (var link in Links)
             {
-                if (transmitters.Any(s => s.transmitterID == link.TransmitterId) &&
-                    receivers.Any(s => s.receiverId == link.ReceiverId))
+                if (transmitters.Any(s => s.TransmitterID == link.TransmitterId) &&
+                    receivers.Any(s => s.ReceiverId == link.ReceiverId))
                 {
                     linksToRemove.Add(link);
                 }

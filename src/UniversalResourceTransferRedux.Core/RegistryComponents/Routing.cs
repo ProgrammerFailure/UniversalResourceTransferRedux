@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CommNet.Network;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -169,6 +170,9 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
             }
             if (GetTransmitterWorldPos(transmitterId) == GetReceiverWorldPos(receiverId))
             {
+#if DEBUG
+                Debug.Log("[URT] Transmitter and receiver returned the same position during link consideration!");
+#endif
                 return null; //Same vessel
             }
             var transmitterInfo = txInfo.Value;
@@ -186,10 +190,10 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
                 return new URT_Link(transmitterId, receiverId, efficiency.Item1, maxDistanceSquared, efficiency.Item2);
             }
             else
-                Debug.Log("[URT] URT_Registry.CreateLink: Invalid link. Discarding");
+            Debug.Log("[URT] URT_Registry.CreateLink: Invalid link. Discarding");
             Debug.Log($"[URT] Link information: tID: {transmitterId}, rID: {receiverId}, efficiency: {efficiency}, maxDistanceSquared: {maxDistanceSquared}");
             Debug.Log($"[URT] Link constituents' information: {transmitterInfo.ToString()}, {receiverInfo.ToString()}");
-                return null;
+            return null;
         }
     }
 }
