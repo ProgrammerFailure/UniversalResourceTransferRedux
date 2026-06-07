@@ -8,41 +8,49 @@ using UniversalResourceTransferRedux.Core.RegistryComponents;
 
 namespace UniversalResourceTransferRedux.Core
 {
-    public class URT_Receiver : PartModule
+    public class URT_Receiver : PartModule, IURT_Receiver
     {
+        //Interface properties
+        public int ModuleId { get { return receiverModuleId; } }
+        public int ReceiverId { get { return receiverId; } }
+
+        public Vessel Vessel => vessel;
         // Part properties
         [KSPField(isPersistant = false, guiActive = false)]
-        public float receiverDiameter;
+        protected float receiverDiameter;
         [KSPField(isPersistant = false, guiActive = true)]
-        public int receiverModuleId;
+        protected int receiverModuleId;
         [KSPField(isPersistant = false, guiActive = true, guiName = "Wavelength")]
-        public float receiverWavelength;
+        protected float receiverWavelength;
         [KSPField(isPersistant = false, guiActive = false)]
-        public float receiverEfficiency;
+        protected float receiverEfficiency;
         [KSPField(isPersistant = false, guiActive = false)]
-        public double receiverTuningFactor;
+        protected double receiverTuningFactor;
         [KSPField(isPersistant = false, guiActive = false)]
-        private string outputResource = "ElectricCharge";
+        protected string outputResource = "ElectricCharge";
         [KSPField(isPersistant = false, guiActive = false)]
-        private float outputResourceEnergyFactor = 1.0f; //This is defined as how many EC one unit of output resource is worth
+        protected float outputResourceEnergyFactor = 1.0f; //This is defined as how many EC one unit of output resource is worth
         [KSPField(isPersistant = false, guiActive = false)]
-        private string resourceTypeTags = "EMRadiation";
+        protected string resourceTypeTags = "EMRadiation";
         //Dynamic values
         [KSPField(isPersistant = true, guiActive = false)]
-        public int receiverId = -1;
+        protected int receiverId = -1;
 
         [KSPField(isPersistant = true, guiActive = true, guiName = "Requested Power")]
         [UI_FloatRange(affectSymCounterparts = UI_Scene.Editor, minValue = 0, maxValue = 100000, stepIncrement = 1)]
-        private float requestedPowerGUI;
+        protected float requestedPowerGUI;
 
         [KSPField(isPersistant = true, guiActive = true, guiName = "Receiving State")]
         [UI_Toggle(affectSymCounterparts = UI_Scene.Editor, enabledText = "Receiving Power", disabledText = "Receiving Disabled")]
-        private bool isReceiving;
+        protected bool isReceiving;
+        
+        [KSPField(isPersistant = true, guiActive = false)]
+        protected double lastUpdateTime;
 
         //Variables
         private URT_Registry registry;
         private int outputResourceHash;
-        private double lastUpdateTime;
+       
         private double currentReceivedAmount;
 
         public override void OnStart(StartState state)
@@ -53,6 +61,7 @@ namespace UniversalResourceTransferRedux.Core
         }
         private IEnumerator WaitForRegistry()
         {
+            yield return null;
             while (URT_Registry.Instance == null) yield return null;
             registry = URT_Registry.Instance;
             InitReceiver();
@@ -140,9 +149,12 @@ namespace UniversalResourceTransferRedux.Core
         #endif
 
         //Internal use functions
-        internal GenericUtils.ReceiverInfo GetReceiverInfo()
+        public GenericUtils.ReceiverInfo GetReceiverInfo()
         {
-            return GenericUtils.ReceiverInfo.Create(receiverDiameter, receiverWavelength, receiverEfficiency, receiverTuningFactor, resourceTypeTags.Split(';'));
+#if DEBUG
+            Debug.Log($"[URT] GetReceiverInfo called. Returning: diameter: {receiverDiameter}, wavelength: {receiverWavelength}, efficiency: {receiverEfficiency}, tuningFactor: {receiverTuningFactor}, resource type tags: {resourceTypeTags}");
+#endif
+            return new GenericUtils.ReceiverInfo(receiverDiameter, receiverWavelength, receiverEfficiency, receiverTuningFactor, resourceTypeTags.Split(';'));
         }
 
         private void OnReceiverStateChanged(BaseField field, object obj)

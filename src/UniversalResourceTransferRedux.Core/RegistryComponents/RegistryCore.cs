@@ -24,11 +24,12 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
         private List<int> receiversOnActiveVessel = new();
 
         //Active PartModule and ProtoPartSnapshot caches
-        private Dictionary<int, URT_Transmitter> activeTransmitterCache = new();
-        private Dictionary<int, URT_Receiver> activeReceiverCache = new();
+        private Dictionary<int, IURT_Transmitter> activeTransmitterCache = new();
+        private Dictionary<int, IURT_Receiver> activeReceiverCache = new();
         private Dictionary<int, ProtoPartSnapshot> inactiveTransmitterCache = new();
         private Dictionary<int, ProtoPartSnapshot> inactiveReceiverCache = new();
 
+        //Working collections
         private List<URT_Link> Links = new();
         private List<(URT_Link, double)> ActiveLinks = new(); //Link, receivedPower
         private List<Action> listeners = new();

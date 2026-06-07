@@ -8,61 +8,70 @@ using static UniversalResourceTransferRedux.Core.GenericUtils;
 
 namespace UniversalResourceTransferRedux.Core
 {
-    public class URT_Transmitter : PartModule
+    public class URT_Transmitter : PartModule, IURT_Transmitter
     {
+        
+
+        //Interface members
+        public int ModuleID => transmitterModuleId;
+        public int TransmitterID => transmitterID;
+        public Vessel Vessel => vessel;
+
         //Part properties
         [KSPField(isPersistant = true, guiActive = true)]
-        public int transmitterID = -1;
+        protected int transmitterID = -1;
 
         [KSPField(isPersistant = true, guiActive = true)]
-        public int transmitterModuleId;
+        protected int transmitterModuleId;
         [KSPField(isPersistant = false, guiActive = true, guiActiveEditor = true)]
-        public float maxTransmittedPower = 10000;
+        protected float maxTransmittedPower = 10000;
 
         [KSPField(isPersistant = false, guiActive = false)]
-        public float transmitterDiameter;
+        protected float transmitterDiameter;
 
         [KSPField(isPersistant = true, guiActive = false)]
-        public float transmitterWavelength;
+        protected float transmitterWavelength;
 
         [KSPField(isPersistant = false, guiActive = false)]
-        public float transmitterEfficiency;
+        protected float transmitterEfficiency;
 
         [KSPField(isPersistant = false, guiActive = false)]
-        public string inputResource = "ElectricCharge";
+        protected string inputResource = "ElectricCharge";
 
         // This is defined as "how many EC is one unit of inputResource worth"
         [KSPField(isPersistant = false, guiActive = false)]
-        private float inputResourceEnergyFactor = 1.0f;
+        protected float inputResourceEnergyFactor = 1.0f;
 
         [KSPField(isPersistant = false, guiActive = false)]
-        private string resourceTypeTags = "EMRadiation";
+        protected string resourceTypeTags = "EMRadiation";
 
         [KSPField(isPersistant = false, guiActive = false)]
-        private float diffractionConstant = 1.22F;
+        protected float diffractionConstant = 1.22F;
+
+        [KSPField(isPersistant = true, guiActive = false)]
+        protected double lastUpdateTime;
 
         //Variables
         private URT_Registry registry;
         private int inputResourceHash;
-        private double lastUpdateTime;
         private double currentTransmittedAmount;
 
         // User set variables
         [KSPField(isPersistant = true, guiActive = true, guiName = "Transmitting")]
         [UI_Toggle(affectSymCounterparts = UI_Scene.Editor, enabledText = "Transmission Active", disabledText = "Transmission Disabled")]
-        private bool isTransmitting;
+        protected bool isTransmitting;
 
         [KSPField(isPersistant = true, guiActive = true, guiName = "Max transmitted power")]
         [UI_FloatRange(affectSymCounterparts = UI_Scene.Editor, minValue = 0, maxValue = 1000, stepIncrement = 1)]
-        private float maxTransmittedPowerGUI;
+        protected float maxTransmittedPowerGUI;
 
         [KSPField(isPersistant = true, guiActive = true, guiName = "Reserve for active vessel")]
         [UI_Toggle(affectSymCounterparts = UI_Scene.Editor, enabledText = "Reserved for active vessel", disabledText = "Available for all receivers")]
-        private bool isReservedForActive;
+        protected bool isReservedForActive;
 
         [KSPField(isPersistant = true, guiActive = true, guiName = "Manual targeting?")]
         [UI_Toggle(affectSymCounterparts = UI_Scene.Editor, enabledText = "Manually targetting", disabledText = "Automatically targetting")]
-        private bool isManuallyTargeting;
+        protected bool isManuallyTargeting;
 
         //
         //      [KSPField(isPersistant = true, guiActive = true, guiName = "Manual transmission target")]
@@ -196,7 +205,7 @@ namespace UniversalResourceTransferRedux.Core
 
         public TransmitterInfo GetTransmitterInfo()
         {
-            return TransmitterInfo.Create(
+            return new TransmitterInfo(
                 transmitterDiameter,
                 transmitterWavelength,
                 transmitterEfficiency,
