@@ -25,17 +25,17 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
             {
                 RefreshCacheReceiver(receiverId);
                 var link = CreateLink(txInfo, GetReceiverInfo(receiverId), assignedId, receiverId);
-                if (link != null && !Links.Contains(link))
+                if (link.HasValue && !Links.Contains(link.Value))
                 {
-                    Links.Add(link);
+                    Links.Add(link.Value);
                 }
 #if DEBUG
-                else if (link == null)
+                else if (!link.HasValue || link == null)
                 {
 
                     Debug.Log("[URT]: Link is null!");
                 }
-                else if (Links.Contains(link))
+                else if (Links.Contains(link.Value))
                 {
                     Debug.Log("[URT]: Links already contains link!");
                 }
@@ -60,17 +60,17 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
             foreach (var transmitterId in transmitterFlightIds.Keys)
             {
                 var link = CreateLink(GetTransmitterInfo(transmitterId), rxInfo, transmitterId, assignedId);
-                if (link != null && !Links.Contains(link))
+                if (link.HasValue && !Links.Contains(link.Value))
                 {
-                    Links.Add(link);
+                    Links.Add(link.Value);
                 }
 #if DEBUG
-                else if (link == null)
+                else if (!link.HasValue)
                 {
 
                     Debug.Log("[URT]: Link is null!");
                 }
-                else if (Links.Contains(link))
+                else if (Links.Contains(link.Value))
                 {
                     Debug.Log("[URT]: Links already contains link!");
                 }

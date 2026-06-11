@@ -13,24 +13,44 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
             base.OnSave(node);
 
             var TransmitterFlightIdsNode = new ConfigNode();
-            foreach (int transmitterId in transmitterFlightIds.Keys)
+            foreach (var kvp in transmitterFlightIds)
             {
                 var flightIdNode = new ConfigNode();
-                flightIdNode.AddValue("TransmitterID", transmitterId);
-                flightIdNode.AddValue("FlightID", transmitterFlightIds[transmitterId]);
+                flightIdNode.AddValue("TransmitterID", kvp.Key);
+                flightIdNode.AddValue("FlightID", kvp.Value);
                 TransmitterFlightIdsNode.AddNode("TRANSMITTER", flightIdNode);
             }
             node.AddNode("TransmitterFlightIds", TransmitterFlightIdsNode);
 
             var ReceiverFlightIdsNode = new ConfigNode();
-            foreach (int receiverId in receiverFlightIds.Keys)
+            foreach (var kvp in receiverFlightIds)
             {
                 var flightIdNode = new ConfigNode();
-                flightIdNode.AddValue("ReceiverID", receiverId);
-                flightIdNode.AddValue("FlightID", receiverFlightIds[receiverId]);
+                flightIdNode.AddValue("ReceiverID", kvp.Key);
+                flightIdNode.AddValue("FlightID", kvp.Value);
                 ReceiverFlightIdsNode.AddNode("RECEIVER", flightIdNode);
             }
             node.AddNode("ReceiverFlightIds", ReceiverFlightIdsNode);
+
+            var TransmitterModuleIdsNode = new ConfigNode();
+            foreach (var kvp in transmitterModuleIds)
+            {
+                var transmitterNode = new ConfigNode();
+                transmitterNode.AddValue("TransmitterId", kvp.Key);
+                transmitterNode.AddValue("TransmitterModuleId", kvp.Value);
+                TransmitterModuleIdsNode.AddNode("TRANSMITTER", transmitterNode);
+            }
+            node.AddNode("TransmitterModuleIdsNode", TransmitterModuleIdsNode);
+
+            var ReceiverModuleIdsNode = new ConfigNode();
+            foreach (var kvp in receiverModuleIds)
+            {
+                var receiverNode = new ConfigNode();
+                receiverNode.AddValue("ReceiverId", kvp.Key);
+                receiverNode.AddValue("ReceiverModuleId", kvp.Value);
+                ReceiverModuleIdsNode.AddNode("RECEIVER", receiverNode);
+            }
+            node.AddNode("ReceiverModuleIdsNode", ReceiverModuleIdsNode);
 
             var LinksNode = new ConfigNode();
             foreach (URT_Link link in Links)
@@ -41,12 +61,13 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
                 LinkNode.AddValue("StaticEfficiencyFactor", link.ConstantLinkFactor);
                 LinkNode.AddValue("MaxEfficiency", link.MaxEfficiencyLimit);
                 LinkNode.AddValue("MaxDistanceSquared", link.MaxDistanceSquared);
+                LinkNode.AddValue("AtmosphereAttenuationCoefficient", link.AtmosphereAttenuationCoefficient);
                 LinksNode.AddNode("LINK", LinkNode);
             }
             node.AddNode("Links", LinksNode);
 
             var TransmitterCurrentMaxAmountsNode = new ConfigNode();
-            foreach (KeyValuePair<int, double> kvp in transmitterCurrentMaxAmounts)
+            foreach (var kvp in transmitterCurrentMaxAmounts)
             {
                 var amountNode = new ConfigNode();
                 amountNode.AddValue("TransmitterID", kvp.Key);
@@ -56,7 +77,7 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
             node.AddNode("TransmitterCurrentMaxAmounts", TransmitterCurrentMaxAmountsNode);
 
             var ReceiverRequestedAmountsNode = new ConfigNode();
-            foreach (KeyValuePair<int, double> kvp in receiverRequestedAmounts)
+            foreach (var kvp in receiverRequestedAmounts)
             {
                 var amountNode = new ConfigNode();
                 amountNode.AddValue("ReceiverID", kvp.Key);
@@ -66,7 +87,7 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
             node.AddNode("ReceiverRequestedAmounts", ReceiverRequestedAmountsNode);
 
             var ManualTransmittersToTargetsNode = new ConfigNode();
-            foreach (KeyValuePair<int, int> kvp in manualTransmittersToTargets)
+            foreach (var kvp in manualTransmittersToTargets)
             {
                 var targetNode = new ConfigNode();
                 targetNode.AddValue("TransmitterID", kvp.Key);
@@ -83,26 +104,6 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
                 ReservedForActiveVesselTransmittersNode.AddNode("RESERVED_TRANSMITTER", reservedNode);
             }
             node.AddNode("ReservedForActiveVesselTransmitters", ReservedForActiveVesselTransmittersNode);
-
-            var TransmitterModuleIdsNode = new ConfigNode();
-            foreach (var transmitter in transmitterModuleIds)
-            {
-                var transmitterNode = new ConfigNode();
-                transmitterNode.AddValue("TransmitterId", transmitter.Key);
-                transmitterNode.AddValue("TransmitterModuleId", transmitter.Value);
-                TransmitterModuleIdsNode.AddNode("TRANSMITTER", transmitterNode);
-            }
-            node.AddNode("TransmitterModuleIdsNode", TransmitterModuleIdsNode);
-
-            var ReceiverModuleIdsNode = new ConfigNode();
-            foreach (var receiver in receiverModuleIds)
-            {
-                var receiverNode = new ConfigNode();
-                receiverNode.AddValue("ReceiverId", receiver.Key);
-                receiverNode.AddValue("ReceiverModuleId", receiver.Value);
-                ReceiverModuleIdsNode.AddNode("RECEIVER", receiverNode);
-            }
-            node.AddNode("ReceiverModuleIdsNode", ReceiverModuleIdsNode);
         }
 
         public override void OnLoad(ConfigNode node)
@@ -111,6 +112,8 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
 
             transmitterFlightIds.Clear();
             receiverFlightIds.Clear();
+            transmitterModuleIds.Clear();
+            receiverModuleIds.Clear();
             Links.Clear();
             transmitterCurrentMaxAmounts.Clear();
             receiverRequestedAmounts.Clear();
@@ -123,7 +126,7 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
                 foreach (ConfigNode child in parentNode.GetNodes("TRANSMITTER"))
                 {
                     if (int.TryParse(child.GetValue("TransmitterID"), out int tId) &&
-                    uint.TryParse(child.GetValue("FlightID"), out uint fId))
+                        uint.TryParse(child.GetValue("FlightID"), out uint fId))
                     {
                         transmitterFlightIds[tId] = fId;
                     }
@@ -136,9 +139,35 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
                 foreach (ConfigNode child in parentNode.GetNodes("RECEIVER"))
                 {
                     if (int.TryParse(child.GetValue("ReceiverID"), out int rId) &&
-                    uint.TryParse(child.GetValue("FlightID"), out uint fId))
+                        uint.TryParse(child.GetValue("FlightID"), out uint fId))
                     {
                         receiverFlightIds[rId] = fId;
+                    }
+                }
+            }
+
+            if (node.HasNode("TransmitterModuleIdsNode"))
+            {
+                ConfigNode parentNode = node.GetNode("TransmitterModuleIdsNode");
+                foreach (ConfigNode child in parentNode.GetNodes("TRANSMITTER"))
+                {
+                    if (int.TryParse(child.GetValue("TransmitterId"), out int tId) &&
+                        int.TryParse(child.GetValue("TransmitterModuleId"), out int mId))
+                    {
+                        transmitterModuleIds[tId] = mId;
+                    }
+                }
+            }
+
+            if (node.HasNode("ReceiverModuleIdsNode"))
+            {
+                ConfigNode parentNode = node.GetNode("ReceiverModuleIdsNode");
+                foreach (ConfigNode child in parentNode.GetNodes("RECEIVER"))
+                {
+                    if (int.TryParse(child.GetValue("ReceiverId"), out int rId) &&
+                        int.TryParse(child.GetValue("ReceiverModuleId"), out int mId))
+                    {
+                        receiverModuleIds[rId] = mId;
                     }
                 }
             }
@@ -149,13 +178,13 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
                 foreach (ConfigNode child in parentNode.GetNodes("LINK"))
                 {
                     if (int.TryParse(child.GetValue("TransmitterID"), out int tId) &&
-                    int.TryParse(child.GetValue("ReceiverID"), out int rId) &&
-                    double.TryParse(child.GetValue("StaticEfficiencyFactor"), out double constantEffFactor) &&
-                    double.TryParse(child.GetValue("MaxDistanceSquared"), out double dist) &&
-                    double.TryParse(child.GetValue("MaxEfficiency"), out double maxEff)
-                    )
+                        int.TryParse(child.GetValue("ReceiverID"), out int rId) &&
+                        double.TryParse(child.GetValue("StaticEfficiencyFactor"), out double constantEffFactor) &&
+                        double.TryParse(child.GetValue("MaxDistanceSquared"), out double dist) &&
+                        double.TryParse(child.GetValue("MaxEfficiency"), out double maxEff) &&
+                        double.TryParse(child.GetValue("AtmosphereAttenuationCoefficient"), out double atmoCoeff))
                     {
-                        Links.Add(new URT_Link(tId, rId, constantEffFactor, dist, maxEff));
+                        Links.Add(new URT_Link(tId, rId, constantEffFactor, dist, maxEff, atmoCoeff));
                     }
                 }
             }
@@ -166,7 +195,7 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
                 foreach (ConfigNode child in parentNode.GetNodes("TRANSMITTER_MAX"))
                 {
                     if (int.TryParse(child.GetValue("TransmitterID"), out int tId) &&
-                    double.TryParse(child.GetValue("MaxAmount"), out double amt))
+                        double.TryParse(child.GetValue("MaxAmount"), out double amt))
                     {
                         transmitterCurrentMaxAmounts[tId] = amt;
                     }
@@ -179,7 +208,7 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
                 foreach (ConfigNode child in parentNode.GetNodes("RECEIVER_REQUEST"))
                 {
                     if (int.TryParse(child.GetValue("ReceiverID"), out int rId) &&
-                    double.TryParse(child.GetValue("RequestedAmount"), out double amt))
+                        double.TryParse(child.GetValue("RequestedAmount"), out double amt))
                     {
                         receiverRequestedAmounts[rId] = amt;
                     }
@@ -192,7 +221,7 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
                 foreach (ConfigNode child in parentNode.GetNodes("MANUAL_TARGET"))
                 {
                     if (int.TryParse(child.GetValue("TransmitterID"), out int tId) &&
-                    int.TryParse(child.GetValue("ReceiverID"), out int rId))
+                        int.TryParse(child.GetValue("ReceiverID"), out int rId))
                     {
                         manualTransmittersToTargets[tId] = rId;
                     }
@@ -210,31 +239,6 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
                     }
                 }
             }
-
-            if (node.HasNode("TransmitterModuleIdsNode"))
-            {
-                var parentNode = node.GetNode("TransmitterModuleIdsNode");
-                foreach (var child in parentNode.GetNodes("TRANSMITTER"))
-                {
-                    transmitterModuleIds.Add(
-                        child.GetInt("TransmitterId"),
-                        child.GetInt("TransmitterModuleId")
-                    );
-                }
-            }
-
-            if (node.HasNode("ReceiverModuleIdsNode"))
-            {
-                var parentNode = node.GetNode("ReceiverModuleIdsNode");
-                foreach (var child in parentNode.GetNodes("RECEIVER"))
-                {
-                    receiverModuleIds.Add(
-                        child.GetInt("ReceiverId"),
-                        child.GetInt("ReceiverModuleId")
-                    );
-                }
-            }
-
             RebuildLinks();
         }
 
