@@ -5,9 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## 0.1.0 - 2026-06-11
+
+There is nothing permanent except change
 
 ### Added
+
 - [API] Function: `CelestialBody URT_Registry.GetReceiverCelestialBody(int receiverID)`
 - [API] Function: `CelestialBody URT_Registry.GetTransmitterCelestialBody(int transmitterId)`
 - [API] Interface: `IURT_Transmitter`
@@ -16,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [Gameplay] Absorption and scattering by atmospheres
 
 ### Changed
+
 - [API] Refactored core logic to an interface-based model using `IURT_Transmitter` and `IURT_Receiver`.
   - Developer Note: Implementing `PartModules` must now include `KSPFields` named `transmitterID` and `receiverId`. 
   - These fields must remain identical to the `TransmitterID` and `ReceiverId` properties at all times for the solver to function correctly.
@@ -26,8 +30,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `readonly struct URT_LinkToProcess` (new): Stores information relevant to a `URT_Link` which is to be evaluated by the network solver. This is transient
 - [Performance] Updated NetworkRebuild coroutine to run on realtime delays, not Unity timescale, which reduces performance impact
 - [Performance] Network solver uses Branch and Bound logic to guarantee maximum efficiency while avoiding excessive link occlusion evaluations.
+
 ### Fixed
+
 - Coroutines only running once in `URT_Registry`
+
 
 ## 0.0.1 - 2026-06-05
 
