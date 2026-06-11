@@ -13,11 +13,12 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
     {
         internal void RebuildLinks()
         {
-            var activeTransmitters = new List<int>();
+            var activeTransmitters = new HashSet<int>();
             var usedTransmittersCount = 0;
             var linksToProcess = new List<URT_Link>();
             var manualLinks = new List<URT_Link>();
-            var activeLinks = new List<(URT_Link, double)>();
+            var activeLinks = new List<URT_ActiveLink>();
+
             foreach (var link in Links)
             {
                 if (receiverRequestedAmounts[link.ReceiverId] <= 0) continue;
@@ -27,6 +28,7 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
                 if (isManual && value == link.ReceiverId)
                 {
                     manualLinks.Add(link);
+                    continue;
                 }
                 else if (isManual && value != link.ReceiverId)
                 {
@@ -35,7 +37,7 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
 
                 linksToProcess.Add(link);
             }
-            var activeTransmittersCount = activeTransmitters.Count();
+            var activeTransmittersCount = activeTransmitters.Count;
 
             Dictionary<int, double> receiverRemainingDemands = new();
             foreach (var kvp in receiverRequestedAmounts)
@@ -45,93 +47,162 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
 
             Dictionary<int, double> transmitterDemands = new();
             double receiverDemandsRunningSum = receiverRemainingDemands.Values.Sum();
-
             foreach (var manualLink in manualLinks)
             {
                 if (receiverRemainingDemands[manualLink.ReceiverId] <= 0) continue;
-
+                
                 var rxPos = GetReceiverWorldPos(manualLink.ReceiverId);
                 var txPos = GetTransmitterWorldPos(manualLink.TransmitterId);
                 if (!rxPos.HasValue || !txPos.HasValue) continue;
                 (var receiverPos, var transmitterPos) = (rxPos.Value, txPos.Value);
                 var distanceSquared = (receiverPos - transmitterPos).sqrMagnitude;
                 if (distanceSquared > manualLink.MaxDistanceSquared) continue;
-                var theoreticalEfficiency = Math.Min(manualLink.ConstantLinkFactor / distanceSquared, 1);
+                var lowestSharedParent = GenericUtils.FindLowestSharedParent(
+                    GetTransmitterCelestialBody(manualLink.TransmitterId),
+                    GetReceiverCelestialBody(manualLink.ReceiverId));
+                var occlusionImpact = URT_PowerCalculator.OcclusionImpact(
+                    transmitterPos,
+                    receiverPos,
+                    lowestSharedParent,
+                    manualLink.AtmosphereAttenuationCoefficient
+                    );
+                if (occlusionImpact <= 1e-5) continue;
+                var theoreticalEfficiency = Math.Min(manualLink.ConstantLinkFactor / distanceSquared, 1) * occlusionImpact * manualLink.MaxEfficiencyLimit;
                 var maxPower = transmitterCurrentMaxAmounts[manualLink.TransmitterId] * theoreticalEfficiency;
 
                 if (maxPower >= receiverRemainingDemands[manualLink.ReceiverId])
                 {
                     var satisfiedReceiverDemand = receiverRemainingDemands[manualLink.ReceiverId];
-                    activeLinks.Add((manualLink, satisfiedReceiverDemand));
+                    var link = new URT_ActiveLink(manualLink, satisfiedReceiverDemand, lowestSharedParent, occlusionImpact);
+                    activeLinks.Add(link);
                     transmitterDemands[manualLink.TransmitterId] = satisfiedReceiverDemand / theoreticalEfficiency;
                     receiverDemandsRunningSum -= satisfiedReceiverDemand;
                     receiverRemainingDemands[manualLink.ReceiverId] = 0;
-
                 }
                 else
                 {
                     var satisfiedReceiverDemand = maxPower;
+                    var link = new URT_ActiveLink(manualLink, satisfiedReceiverDemand, lowestSharedParent, occlusionImpact);
                     transmitterDemands[manualLink.TransmitterId] = transmitterCurrentMaxAmounts[manualLink.TransmitterId];
                     receiverDemandsRunningSum -= maxPower;
                     receiverRemainingDemands[manualLink.ReceiverId] -= maxPower;
-                    activeLinks.Add((manualLink, maxPower));
+                    activeLinks.Add(link);
                 }
             }
-
-            Dictionary<URT_Link, double> linksToEfficiencies = new();
-            foreach (var link in linksToProcess)
+            List<URT_LinkToProcess> linksToEfficiencies = new List<URT_LinkToProcess>();
+            Dictionary<(int, int), (double, double)> linkTrueEfficiencies = new(); //key: (transmitterId, receiverId), value: (trueEfficiency, occlusionImpact)
+            for (int i = 0; i < linksToProcess.Count; i++)
             {
+                var link = linksToProcess[i];
                 var rxPos = GetReceiverWorldPos(link.ReceiverId);
                 var txPos = GetTransmitterWorldPos(link.TransmitterId);
                 if (!rxPos.HasValue || !txPos.HasValue) continue;
                 (var receiverPos, var transmitterPos) = (rxPos.Value, txPos.Value);
                 var distanceSquared = (receiverPos - transmitterPos).sqrMagnitude;
                 if (distanceSquared > link.MaxDistanceSquared) continue;
-                var theoreticalEfficiency = Math.Min(link.ConstantLinkFactor / distanceSquared, 1);
+                var theoreticalEfficiency = Math.Min(link.ConstantLinkFactor / distanceSquared, 1) * link.MaxEfficiencyLimit;
 
-                linksToEfficiencies.Add(link, theoreticalEfficiency);
+                linksToEfficiencies.Add(new URT_LinkToProcess(link, theoreticalEfficiency, transmitterPos, receiverPos));
             }
+            linksToEfficiencies.Sort((x, y) => y.TheoreticalEfficiency.CompareTo(x.TheoreticalEfficiency));
 
-            var linksSorted = linksToEfficiencies.OrderByDescending(s => s.Value);
-
-            foreach (var linkToEfficiency in linksSorted)
+            for (int i = 0; i < linksToEfficiencies.Count; i++)
             {
-                if (receiverDemandsRunningSum == 0.0) break;
+                if (receiverDemandsRunningSum <= 0.0) break;
                 if (usedTransmittersCount == activeTransmittersCount) break;
-                if (receiverRemainingDemands[linkToEfficiency.Key.ReceiverId] <= 0) continue;
-                if (transmitterDemands.ContainsKey(linkToEfficiency.Key.TransmitterId)) continue;
-                if (reservedForActiveVesselTransmitters.Contains(linkToEfficiency.Key.TransmitterId) &&
-                    !receiversOnActiveVessel.Contains(linkToEfficiency.Key.ReceiverId)) continue;
+                var linkToProcess = linksToEfficiencies[i];
+                if (receiverRemainingDemands[linkToProcess.Link.ReceiverId] <= 0) continue;
+                if (transmitterDemands.ContainsKey(linkToProcess.Link.TransmitterId)) continue;
+                if (reservedForActiveVesselTransmitters.Contains(linkToProcess.Link.TransmitterId) &&
+                    !receiversOnActiveVessel.Contains(linkToProcess.Link.ReceiverId)) continue;
 
-                var maxPower = transmitterCurrentMaxAmounts[linkToEfficiency.Key.TransmitterId] * linkToEfficiency.Value;
-
-                if (maxPower >= receiverRemainingDemands[linkToEfficiency.Key.ReceiverId])
+                double trueEfficiency;
+                double occlusionImpact;
+                CelestialBody body = GenericUtils.FindLowestSharedParent(
+                        GetReceiverCelestialBody(linkToProcess.Link.ReceiverId),
+                        GetTransmitterCelestialBody(linkToProcess.Link.TransmitterId));
+                if (linkTrueEfficiencies.TryGetValue((linkToProcess.Link.TransmitterId, linkToProcess.Link.ReceiverId), out var trueEff))
                 {
-                    var receiverSatisfaction = receiverRemainingDemands[linkToEfficiency.Key.ReceiverId];
-                    receiverDemandsRunningSum -= receiverSatisfaction;
-                    transmitterDemands.Add(
-                        linkToEfficiency.Key.TransmitterId,
-                        receiverSatisfaction / linkToEfficiency.Value
-                    );
-                    receiverRemainingDemands[linkToEfficiency.Key.ReceiverId] = 0;
-                    usedTransmittersCount++;
-                    activeLinks.Add((linkToEfficiency.Key, receiverSatisfaction));
+                    trueEfficiency = trueEff.Item1;
+                    occlusionImpact = trueEff.Item2;
                 }
                 else
                 {
-                    var receiverSatisfaction = maxPower;
-                    transmitterDemands.Add(linkToEfficiency.Key.TransmitterId, transmitterCurrentMaxAmounts[linkToEfficiency.Key.TransmitterId]);
-                    receiverRemainingDemands[linkToEfficiency.Key.ReceiverId] -= maxPower;
+                    occlusionImpact = URT_PowerCalculator.OcclusionImpact(
+                    linkToProcess.TransmitterPosition,
+                    linkToProcess.ReceiverPosition,
+                    body,
+                    linkToProcess.Link.AtmosphereAttenuationCoefficient
+                    );
+                    trueEfficiency = linkToProcess.TheoreticalEfficiency * occlusionImpact;
+                }
+                if (trueEfficiency <= 1e-9) continue;
+                var skip = false;
+                for (int j = i + 1; j < linksToEfficiencies.Count; j++)
+                {
+
+                    var tempLink = linksToEfficiencies[j];
+                    if (tempLink.TheoreticalEfficiency <= trueEfficiency)
+                    {
+                        break;
+                    }
+                    if (tempLink.Link.TransmitterId != linkToProcess.Link.TransmitterId) continue;
+                    double tempEfficiency;
+
+                    if (linkTrueEfficiencies.TryGetValue((tempLink.Link.TransmitterId, tempLink.Link.ReceiverId), out var tempTrueEfficiency))
+                    {
+                        tempEfficiency = tempTrueEfficiency.Item1;
+                    }
+                    else
+                    {
+                        var tempOcclusionImpact = URT_PowerCalculator.OcclusionImpact(
+                            tempLink.TransmitterPosition,
+                            tempLink.ReceiverPosition,
+                            GenericUtils.FindLowestSharedParent(
+                               GetReceiverCelestialBody(tempLink.Link.ReceiverId),
+                               GetTransmitterCelestialBody(tempLink.Link.TransmitterId)
+                               ),
+                            tempLink.Link.AtmosphereAttenuationCoefficient
+                        );
+                        tempEfficiency = tempLink.TheoreticalEfficiency * tempOcclusionImpact;
+                        linkTrueEfficiencies.Add((tempLink.Link.TransmitterId, tempLink.Link.ReceiverId), (tempEfficiency, tempOcclusionImpact));
+                    }
+                    if (tempEfficiency > trueEfficiency)
+                    {
+                        skip = true;
+
+                        break;
+                    }
+                }
+                if (skip) continue;
+
+                var maxPower = trueEfficiency * transmitterCurrentMaxAmounts[linkToProcess.Link.TransmitterId];
+                if (maxPower < receiverRemainingDemands[linkToProcess.Link.ReceiverId])
+                {
+                    receiverRemainingDemands[linkToProcess.Link.ReceiverId] -= maxPower;
+                    transmitterDemands[linkToProcess.Link.TransmitterId] = transmitterCurrentMaxAmounts[linkToProcess.Link.TransmitterId];
                     receiverDemandsRunningSum -= maxPower;
                     usedTransmittersCount++;
-                    activeLinks.Add((linkToEfficiency.Key, maxPower));
+                    var activeLink = new URT_ActiveLink(linkToProcess.Link, maxPower, body, occlusionImpact);
+                    activeLinks.Add(activeLink);
+                }
+                else
+                {
+                    var receiverSatisfaction = receiverRemainingDemands[linkToProcess.Link.ReceiverId];
+                    receiverRemainingDemands[linkToProcess.Link.ReceiverId] = 0.0;
+                    transmitterDemands[linkToProcess.Link.TransmitterId] = receiverSatisfaction / trueEfficiency;
+                    receiverDemandsRunningSum -= receiverSatisfaction;
+                    usedTransmittersCount++;
+                    var activeLink = new URT_ActiveLink(linkToProcess.Link, receiverSatisfaction, body, occlusionImpact);
+                    activeLinks.Add(activeLink);
                 }
             }
+
             foreach (int transmitterId in transmitterTransmittedAmounts.Keys.ToList())
             {
-                if (transmitterDemands.TryGetValue(transmitterId, out var value))
+                if (transmitterDemands.TryGetValue(transmitterId, out var demand))
                 {
-                    transmitterTransmittedAmounts[transmitterId] = value;
+                    transmitterTransmittedAmounts[transmitterId] = transmitterDemands[transmitterId];
                 }
                 else
                 {
@@ -152,7 +223,53 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
                     receiverReceivedAmounts[receiverId] = 0;
                 }
             }
-            ActiveLinks = activeLinks;
+            ActiveLinks.Clear();
+            foreach (var link in activeLinks)
+            {
+                ActiveLinks.Add(link);
+            }
+        }
+
+        internal void ManageOcclusionCache()
+        {
+            int totalLinks = ActiveLinks.Count;
+            if (totalLinks == 0) return;
+            if (lastUpdatedIndex >= totalLinks)
+            {
+                lastUpdatedIndex = 0;
+            }
+            int updatesThisFrame = Math.Min(totalLinks, MaxUpdatesPerFrame);
+
+            for (int i = 0; i < updatesThisFrame; i++)
+            {
+                var link = ActiveLinks[lastUpdatedIndex];
+
+                var rxPos = GetReceiverWorldPos(link.Link.ReceiverId);
+                var txPos = GetTransmitterWorldPos(link.Link.TransmitterId);
+
+                if (rxPos.HasValue && txPos.HasValue)
+                {
+                    double distanceSquared = (rxPos.Value - txPos.Value).sqrMagnitude;
+
+                    // Check planetary occlusion and atmospheric density
+                    double occlusion = URT_PowerCalculator.OcclusionImpact(
+                        txPos.Value,
+                        rxPos.Value,
+                        link.LowestSharedParent,
+                        link.Link.AtmosphereAttenuationCoefficient
+                    );
+
+                    link.OcclusionImpact = occlusion;
+                }
+                else
+                {
+                    link.OcclusionImpact = 1.0;
+                }
+                ActiveLinks[lastUpdatedIndex] = link;
+
+                // Increment and wrap our circular pointer
+                lastUpdatedIndex = (lastUpdatedIndex + 1) % totalLinks;
+            }
         }
         internal URT_Link? CreateLink(GenericUtils.TransmitterInfo? txInfo, GenericUtils.ReceiverInfo? rxInfo, int transmitterId, int receiverId)
         {
@@ -187,7 +304,9 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
             var maxDistanceSquared = efficiency.Item1 * transmitterInfo.MaxPower * efficiency.Item2;
             if (efficiency.Item1 > 0 && efficiency.Item2 > 0 && maxDistanceSquared > 0)
             {
-                return new URT_Link(transmitterId, receiverId, efficiency.Item1, maxDistanceSquared, efficiency.Item2);
+                var rayleigh = (RayleighCoefficient / Math.Pow(transmitterInfo.Wavelength, 4));
+                var mie = (MieCoefficient / Math.Pow(transmitterInfo.Wavelength, 1.3));
+                return new URT_Link(transmitterId, receiverId, efficiency.Item1, maxDistanceSquared, efficiency.Item2, mie + rayleigh);
             }
             else
             Debug.Log("[URT] URT_Registry.CreateLink: Invalid link. Discarding");

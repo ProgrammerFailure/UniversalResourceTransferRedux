@@ -13,49 +13,47 @@ namespace UniversalResourceTransferRedux.Core
         //Interface properties
         public int ModuleId { get { return receiverModuleId; } }
         public int ReceiverId { get { return receiverId; } }
-
+        
         public Vessel Vessel => vessel;
         // Part properties
         [KSPField(isPersistant = false, guiActive = false)]
-        protected float receiverDiameter;
+        public float receiverDiameter;
         [KSPField(isPersistant = false, guiActive = true)]
-        protected int receiverModuleId;
+        public int receiverModuleId;
         [KSPField(isPersistant = false, guiActive = true, guiName = "Wavelength")]
-        protected float receiverWavelength;
+        public float receiverWavelength;
         [KSPField(isPersistant = false, guiActive = false)]
-        protected float receiverEfficiency;
+        public float receiverEfficiency;
         [KSPField(isPersistant = false, guiActive = false)]
-        protected double receiverTuningFactor;
+        public double receiverTuningFactor;
         [KSPField(isPersistant = false, guiActive = false)]
-        protected string outputResource = "ElectricCharge";
+        public string outputResource = "ElectricCharge";
         [KSPField(isPersistant = false, guiActive = false)]
-        protected float outputResourceEnergyFactor = 1.0f; //This is defined as how many EC one unit of output resource is worth
+        public float outputResourceEnergyFactor = 1.0f; //This is defined as how many EC one unit of output resource is worth
         [KSPField(isPersistant = false, guiActive = false)]
-        protected string resourceTypeTags = "EMRadiation";
+        public string resourceTypeTags = "EMRadiation";
         //Dynamic values
         [KSPField(isPersistant = true, guiActive = false)]
-        protected int receiverId = -1;
+        public int receiverId = -1;
 
         [KSPField(isPersistant = true, guiActive = true, guiName = "Requested Power")]
         [UI_FloatRange(affectSymCounterparts = UI_Scene.Editor, minValue = 0, maxValue = 100000, stepIncrement = 1)]
-        protected float requestedPowerGUI;
+        public float requestedPowerGUI;
 
         [KSPField(isPersistant = true, guiActive = true, guiName = "Receiving State")]
         [UI_Toggle(affectSymCounterparts = UI_Scene.Editor, enabledText = "Receiving Power", disabledText = "Receiving Disabled")]
-        protected bool isReceiving;
+        public bool isReceiving;
         
         [KSPField(isPersistant = true, guiActive = false)]
-        protected double lastUpdateTime;
+        public double lastUpdateTime;
 
         //Variables
         private URT_Registry registry;
         private int outputResourceHash;
-       
         private double currentReceivedAmount;
 
-        public override void OnStart(StartState state)
+        public void Start()
         {
-            base.OnStart(state);
             if (!HighLogic.LoadedSceneIsFlight) return;
             StartCoroutine(WaitForRegistry());
         }
@@ -65,6 +63,10 @@ namespace UniversalResourceTransferRedux.Core
             while (URT_Registry.Instance == null) yield return null;
             registry = URT_Registry.Instance;
             InitReceiver();
+        }
+        public override void OnLoad(ConfigNode node)
+        {
+            base.OnLoad(node);
         }
 
         private void InitReceiver()
@@ -152,7 +154,7 @@ namespace UniversalResourceTransferRedux.Core
         public GenericUtils.ReceiverInfo GetReceiverInfo()
         {
 #if DEBUG
-            Debug.Log($"[URT] GetReceiverInfo called. Returning: diameter: {receiverDiameter}, wavelength: {receiverWavelength}, efficiency: {receiverEfficiency}, tuningFactor: {receiverTuningFactor}, resource type tags: {resourceTypeTags}");
+            Debug.Log($"[URT] GetReceiverInfo called. Part current values: diameter: {receiverDiameter}, wavelength: {receiverWavelength}, efficiency: {receiverEfficiency}, tuningFactor: {receiverTuningFactor}, resource type tags: {resourceTypeTags}");
 #endif
             return new GenericUtils.ReceiverInfo(receiverDiameter, receiverWavelength, receiverEfficiency, receiverTuningFactor, resourceTypeTags.Split(';'));
         }

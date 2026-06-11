@@ -1,0 +1,244 @@
+﻿\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{geometry}
+\usepackage{listings}
+\usepackage{color}
+\usepackage{cite}
+\usepackage{hyperref}
+
+\geometry{margin=1in}
+
+\definecolor{commentgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+
+\lstset{
+  frame=tb,
+  language=[Sharp]C,
+  aboveskip=3mm,
+  belowskip=3mm,
+  showstringspaces=false,
+  columns=flexible,
+  basicstyle={\small\ttfamily},
+  numbers=none,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue},
+  commentstyle=\color{commentgreen},
+  stringstyle=\color{mauve},
+  breaklines=true,
+  breakatwhitespace=true,
+  tabsize=3
+}
+
+\title{Rationale for Column Density logic for atmospheric occlusion}
+\author{ProgrammerFailure}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction and Context}
+
+Electromagnetic waves moving through a physical medium experience a drop in intensity due to scattering and absorption. This effect is governed by the Beer-Lambert law, which is what we are ultimately integrating for:
+
+\begin{equation}
+dI = - \beta(s) I \, ds
+\end{equation}
+
+where $I$ is the intensity, $s$ is the path length, and $\beta(s)$ is the volume extinction coefficient. In a planetary atmosphere, $\beta(s)$ is directly proportional to the local mass density $\rho(s)$ of the gas:
+
+\begin{equation}
+\beta(s) = \kappa(W) \rho(s)
+\end{equation}
+
+where $\kappa(W)$ represents the mass extinction coefficient ($\text{m}^2/\text{kg}$) for a given wavelength $W$. Integrating the Beer-Lambert differential equation along a finite path segment from $a$ to $b$ yields:
+
+\begin{equation}
+I(b) = I(a) \exp \left( -\kappa(W) \int_{a}^{b} \rho(s) \, ds \right)
+\end{equation}
+
+The integral of density over the path length is defined as the column density $M$, with units of $\text{kg/m}^2$:
+
+\begin{equation}
+M = \int_{a}^{b} \rho(s) \, ds
+\end{equation}
+
+The dimensionless exponent $\tau = \kappa(W) M$ is the optical depth of the path.
+
+\section{Dimension Reduction (3D to 1D)}
+Integrating directly in 3D spherical coordinates is entirely impractical. To simplify the problem, we define a 1D coordinate axis $s$ aligned with the beam direction vector $\hat{u}$:
+
+\begin{equation}
+\hat{u} = \frac{\mathbf{D} - \mathbf{T}}{\|\mathbf{D} - \mathbf{T}\|}
+\end{equation}
+
+where $\mathbf{T}$ is the transmitter position and $\mathbf{D}$ is the destination position relative to the planet's center $\mathbf{P} = \mathbf{0}$. This significantly simplifies the problem: it moves from a 3D geometry problem to a relatively simple 1D line problem.
+
+By projecting the transmitter $\mathbf{T}$ and destination $\mathbf{D}$ vectors onto $\hat{u}$ via the dot product, we obtain their signed 1D positions relative to this closest approach origin ($s=0$):
+
+\begin{equation}
+s_T = \mathbf{T} \cdot \hat{u}
+\end{equation}
+\begin{equation}
+s_D = \mathbf{D} \cdot \hat{u}
+\end{equation}
+
+The square of the minimum distance from the planet's center to the infinite line ($d_{min}^2$) is given by:
+
+\begin{equation}
+d_{min}^2 = \|\mathbf{T}\|^2 - s_T^2
+\end{equation}
+($d_{min}^2$ is used in place of $d_{min}$ for performance reasons)
+
+An atmosphere of radius $r_{atmo}$ is a sphere. The boundaries of this sphere intersect the infinite line of the beam at:
+
+\begin{equation}
+s_{atmo} = \pm \sqrt{r_{atmo}^2 - d_{min}^2}
+\end{equation}
+
+To evaluate the mass traversed strictly within the atmospheric boundary, we clamp our 1D coordinates:
+
+\begin{equation}
+a = \max(-s_{atmo}, \min(s_T, s_D))
+\end{equation}
+\begin{equation}
+b = \min(s_{atmo}, \max(s_T, s_D))
+\end{equation}
+
+This now gives us the line segment traversed inside the atmosphere, with end points defined relative to the closest approach point. At any 1D coordinate $s \in [a, b]$, the altitude $h(s)$ above the planet's surface of physical radius $R$ is given by:
+
+\begin{equation}
+h(s) = \sqrt{d_{min}^2 + s^2} - R
+\end{equation}
+
+\section{The Exponential Atmosphere Model}
+In an isothermal, hydrostatic (no changes in temperature, and no overall movement) atmosphere, the density $\rho(h)$ decays exponentially with altitude according to the barometric formula:
+
+\begin{equation}
+\rho(h) = \rho_0 \exp\left(-\frac{h}{H}\right)
+\end{equation}
+
+where $\rho_0$ is the sea-level density and $H$ is the atmospheric scale height. Expressed in terms of our 1D path coordinate $s$:
+
+\begin{equation}
+\rho(s) = \rho_0 \exp\left( -\frac{\sqrt{d_{min}^2 + s^2} - R}{H} \right)
+\end{equation}
+(This is obtained by plugging in the formula for height at any point) \\
+The absolute column density over the segment $[a, b]$ is the integral:
+
+\begin{equation}
+M = \int_{a}^{b} \rho_0 \exp\left( -\frac{\sqrt{d_{min}^2 + s^2} - R}{H} \right) ds
+\end{equation}
+
+\section{Regime 1: The Grazing Path (Chapman Function)}
+For grazing paths ($d_{min} \ge R$), planetary curvature prevents us from assuming a flat atmosphere. In his 1931 paper, Sydney Chapman addressed this exact integral by introducing the Chapman Function ($Ch$) \cite{chapman1931}:
+
+\begin{equation}
+Ch(\lambda, z) = \lambda \int_{0}^{\infty} \exp\left( -\lambda \left[ \sqrt{1 + t^2 + 2t\cos z} - 1 \right] \right) dt
+\end{equation}
+
+where $\lambda = R/H$ and $z$ is the zenith angle. Zenith is the vector moving directly up, and zenith angle is the angle from that to the beam vector. The Chapman function remains standard among atmospheric physics for any value that decays exponentially with altitude to this day.
+
+To solve this efficiently in code, we utilize a localized parabolic approximation of the planet's spherical curvature. If $s$ is small relative to $d_{min}$, we perform a Taylor series expansion of the square root:
+
+\begin{equation}
+\sqrt{d_{min}^2 + s^2} = d_{min} \sqrt{1 + \frac{s^2}{d_{min}^2}} \approx d_{min} \left(1 + \frac{s^2}{2d_{min}^2}\right) = d_{min} + \frac{s^2}{2d_{min}}
+\end{equation}
+
+Substituting this quadratic approximation back into our exponential density equation yields:
+
+\begin{equation}
+\rho(s) \approx \rho_0 \exp\left( -\frac{d_{min} - R + \frac{s^2}{2d_{min}}}{H} \right)
+\end{equation}
+
+By grouping terms, we isolate the density at the minimum altitude of the path, $\rho(h_{min}) = \rho_0 \exp\left(-\frac{d_{min} - R}{H}\right)$:
+
+\begin{equation}
+\rho(s) \approx \rho(h_{min}) \exp\left( -\frac{s^2}{2H d_{min}} \right)
+\end{equation}
+
+This is mathematically equivalent to a Gaussian (normal) distribution of the form $f(s) \propto \exp\left(-\frac{s^2}{2\sigma^2}\right)$, where the standard deviation $\sigma$ is:
+
+\begin{equation}
+\sigma = \sqrt{H d_{min}}
+\end{equation}
+
+To find the integrated column density from the closest approach ($s=0$) to any point $x$, we integrate this Gaussian:
+
+\begin{equation}
+F(x) = \int_{0}^{x} \rho(s) \, ds \approx \rho(h_{min}) \int_{0}^{x} \exp\left( -\frac{s^2}{2H d_{min}} \right) ds
+\end{equation}
+
+Applying the substitution $u = \frac{s}{\sqrt{2H d_{min}}}$, the differential is $ds = \sqrt{2H d_{min}} \, du$. The integral is transformed into the standard Error Function ($\text{erf}$) domain:
+
+\begin{equation}
+F(x) \approx \rho(h_{min}) \sqrt{2H d_{min}} \int_{0}^{\frac{x}{\sqrt{2H d_{min}}}} e^{-u^2} du
+\end{equation}
+
+Since $\int_0^z e^{-u^2} du = \frac{\sqrt{\pi}}{2} \text{erf}(z)$, we get:
+
+\begin{equation}
+F(x) \approx \rho(h_{min}) \sqrt{\frac{\pi H d_{min}}{2}} \text{erf}\left( \frac{x}{\sqrt{2 H d_{min}}} \right)
+\end{equation}
+
+Thus, the total column density over any arbitrary active segment $[a, b]$ is:
+
+\begin{equation}
+M = |F(b) - F(a)|
+\end{equation}
+
+\section{Regime 2: The Steep Path Fallback (Slant-Exponential)}
+The grazing approximation breaks down when the path is steep ($d_{min} < R$, or as $d_{min} \to 0$). For these paths, the infinite line of the beam passes through the planet's core. The standard deviation $\sigma = \sqrt{H d_{min}}$ approaches zero, causing the Gaussian model to erroneously predict zero column density for a vertical beam.
+
+For steep paths, we employ the plane-parallel approximation. Because the beam cuts rapidly across concentric atmospheric layers, we assume that altitude $h(s)$ changes monotonically (only ever changes in one direction) with the path distance $s$. 
+
+Let us parameterize the change in altitude over the segment $[a, b]$ as a linear gradient. The differential relationship between the path step $ds$ and the vertical step $dh$ is constant:
+
+\begin{equation}
+\frac{dh}{ds} \approx \frac{h_b - h_a}{b - a} = \frac{\Delta h}{L_{path}} \implies ds = \left( \frac{L_{path}}{\Delta h} \right) dh
+\end{equation}
+
+Substituting this change of variables into the column density integral:
+
+\begin{equation}
+M_{steep} = \int_{a}^{b} \rho_0 e^{-h(s)/H} ds \approx \int_{h_a}^{h_b} \rho_0 e^{-h/H} \left( \frac{L_{path}}{\Delta h} \right) dh
+\end{equation}
+
+Integrating this analytically:
+
+\begin{equation}
+M_{steep} \approx \left( \frac{L_{path}}{\Delta h} \right) \rho_0 \left[ -H e^{-h/H} \right]_{h_a}^{h_b}
+\end{equation}
+\begin{equation}
+M_{steep} \approx \left( \frac{L_{path}}{\Delta h} \right) H \left( \rho_0 e^{-h_a/H} - \rho_0 e^{-h_b/H} \right)
+\end{equation}
+
+Recognizing that $\rho(h_a) = \rho_0 e^{-h_a/H}$ and $\rho(h_b) = \rho_0 e^{-h_b/H}$, we arrive at the final closed-form Slant-Exponential equation:
+
+\begin{equation}
+M_{steep} \approx \left( \frac{L_{path}}{\Delta h} \right) H \left| \rho(h_a) - \rho(h_b) \right|
+\end{equation}
+
+\begin{thebibliography}{9}
+
+\bibitem{chapman1931}
+Chapman, S. (1931). 
+\emph{The absorption and dissociative or ionizing effect of monochromatic radiation in an atmosphere on a rotating earth}. 
+Proceedings of the Physical Society, 43(1), 26–45.
+
+\bibitem{chapman1953}
+Chapman, S. (1953). 
+\emph{Note on the grazing-incidence integral ch(x, $\chi$) for monochromatic absorption in an exponential atmosphere}. 
+Proceedings of the Physical Society. Section B, 66(8), 710.
+
+\bibitem{schunk2009}
+Schunk, R., \& Nagy, A. (2009). 
+\emph{Ionospheres: physics, plasma physics, and chemistry}. 
+Cambridge University Press.
+
+\end{thebibliography}
+
+\end{document}

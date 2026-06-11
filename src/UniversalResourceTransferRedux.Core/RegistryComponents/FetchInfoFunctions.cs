@@ -24,39 +24,90 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
         {
             if (activeTransmitterCache.TryGetValue(transmitterId, out var transmitterModule) && transmitterModule != null)
             {
+#if DEBUG
+                Debug.Log("[URT]: Active cache hit! Found transmitter module.");
+#endif
                 return transmitterModule.GetTransmitterInfo();
             }
             if (inactiveTransmitterCache.TryGetValue(transmitterId, out var transmitterProtoPart) &&
                 transmitterProtoPart != null &&
-                transmitterProtoPart.modules.Find(s => 
-                s.moduleName == "URT_Transmitter" &&
-                s.moduleValues.GetInt("transmitterID") == transmitterId) is ProtoPartModuleSnapshot transmitterProtoPartModule)
+                transmitterProtoPart.partPrefab
+                .FindModulesImplementing<IURT_Transmitter>()
+                .Find(s => s.ModuleID == transmitterModuleIds[transmitterId]) is IURT_Transmitter transmitterModule2)
             {
-                return transmitterProtoPart.partPrefab
-                    .FindModulesImplementing<IURT_Transmitter>()
-                    .Find(s => s.ModuleID == transmitterModuleIds[transmitterId])
-                    .GetTransmitterInfo();
+#if DEBUG
+                Debug.Log("[URT]: Inactive cache hit! Found transmitter module on part prefab.");
+#endif
+                return transmitterModule2.GetTransmitterInfo();
             }
             RefreshCacheTransmitter(transmitterId);
+
+            if (activeTransmitterCache.TryGetValue(transmitterId, out var transmitterModule3) && transmitterModule3 != null)
+            {
+#if DEBUG
+                Debug.Log("[URT]: Active cache hit post refresh! Found transmitter module.");
+#endif
+                return transmitterModule3.GetTransmitterInfo();
+            }
+            if (inactiveTransmitterCache.TryGetValue(transmitterId, out var transmitterProtoPart2) &&
+                transmitterProtoPart2 != null &&
+                transmitterProtoPart2.partPrefab
+                .FindModulesImplementing<IURT_Transmitter>()
+                .Find(s => s.ModuleID == transmitterModuleIds[transmitterId]) is IURT_Transmitter transmitterModule4)
+            {
+#if DEBUG
+                Debug.Log("[URT]: Inactive cache hit post refresh! Found transmitter module on part prefab.");
+#endif
+                return transmitterModule4.GetTransmitterInfo();
+            }
+#if DEBUG
+            Debug.Log("[URT]: No cache hits for transmitter! Returning null.");
+#endif
             return null;
         }
         public GenericUtils.ReceiverInfo? GetReceiverInfo(int receiverID)
         {
             if (activeReceiverCache.TryGetValue(receiverID, out var receiverModule) && receiverModule != null)
             {
+#if DEBUG
+                Debug.Log("[URT]: Active cache hit! Found receiver module.");
+#endif
                 return receiverModule.GetReceiverInfo();
             }
             if (inactiveReceiverCache.TryGetValue(receiverID, out var receiverProtoPart) &&
                 receiverProtoPart != null &&
-                    receiverProtoPart.modules.Find(s => s.moduleName == "URT_Receiver" &&
-                s.moduleValues.GetInt("receiverId") == receiverID) is ProtoPartModuleSnapshot receiverProtoPartModule)
-            {
-                return receiverProtoPart.partPrefab
+                receiverProtoPart.partPrefab
                 .FindModulesImplementing<IURT_Receiver>()
-                .Find(s => s.ModuleId == receiverModuleIds[receiverID])
-                .GetReceiverInfo();
+                .Find(s => s.ModuleId == receiverModuleIds[receiverID]) is IURT_Receiver receiverModule2)
+            {
+#if DEBUG
+                Debug.Log("[URT]: Inactive cache hit! Found receiver module on part prefab.");
+#endif
+                return receiverModule2.GetReceiverInfo();
             }
             RefreshCacheReceiver(receiverID);
+
+            if (activeReceiverCache.TryGetValue(receiverID, out var receiverModule3) && receiverModule3 != null)
+            {
+#if DEBUG
+                Debug.Log("[URT]: Active cache hit post refresh! Found receiver module.");
+#endif
+                return receiverModule3.GetReceiverInfo();
+            }
+            if (inactiveReceiverCache.TryGetValue(receiverID, out var receiverProtoPart2) &&
+                receiverProtoPart2 != null &&
+                receiverProtoPart2.partPrefab
+                .FindModulesImplementing<IURT_Receiver>()
+                .Find(s => s.ModuleId == receiverModuleIds[receiverID]) is IURT_Receiver receiverModule4)
+                {
+#if DEBUG
+                Debug.Log("[URT]: Inactive cache hit post refresh! Found receiver module on part prefab.");
+#endif
+                return receiverModule4.GetReceiverInfo();
+            }
+#if DEBUG
+            Debug.Log("[URT]: No cache hits. Returning null for receiver");
+#endif
             return null;
         }
 
@@ -64,6 +115,7 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
         {
             if (activeTransmitterCache.TryGetValue(transmitterId, out var transmitterModule) && transmitterModule != null)
             {
+                
                 return transmitterModule.Vessel.GetWorldPos3D();
             }
             if (inactiveTransmitterCache.TryGetValue(transmitterId, out var transmitterProtoPart) &&
@@ -107,6 +159,62 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
                 receiverProtoPart2 != null)
             {
                 return GenericUtils.GetProtoVesselWorldPosAtTime(receiverProtoPart2.pVesselRef, time);
+            }
+
+            return null;
+        }
+
+        public CelestialBody GetReceiverCelestialBody(int receiverID)
+        {
+            if (activeReceiverCache.TryGetValue(receiverID, out var receiverModule) && receiverModule != null)
+            {
+                return receiverModule.Vessel.mainBody;
+            }
+            if (inactiveReceiverCache.TryGetValue(receiverID, out var receiverProtoPart) &&
+                receiverProtoPart != null)
+            {
+                if (receiverProtoPart.pVesselRef.vesselRef != null) return receiverProtoPart.pVesselRef.vesselRef.mainBody;
+                else return FlightGlobals.Bodies[receiverProtoPart.pVesselRef.orbitSnapShot.ReferenceBodyIndex];
+            }
+            RefreshCacheReceiver(receiverID);
+
+            if (activeReceiverCache.TryGetValue(receiverID, out var receiverModule2) && receiverModule2 != null)
+            {
+                return receiverModule2.Vessel.mainBody;
+            }
+            if (inactiveReceiverCache.TryGetValue(receiverID, out var receiverProtoPart2) &&
+                receiverProtoPart2 != null)
+            {
+                if (receiverProtoPart2.pVesselRef.vesselRef != null) return receiverProtoPart2.pVesselRef.vesselRef.mainBody;
+                else return FlightGlobals.Bodies[receiverProtoPart2.pVesselRef.orbitSnapShot.ReferenceBodyIndex];
+            }
+
+            return null;
+        }
+
+        public CelestialBody GetTransmitterCelestialBody(int transmitterId)
+        {
+            if (activeTransmitterCache.TryGetValue(transmitterId, out var transmitterModule) && transmitterModule != null)
+            {
+                return transmitterModule.Vessel.mainBody;
+            }
+            if (inactiveTransmitterCache.TryGetValue(transmitterId, out var transmitterProtoPart) &&
+                transmitterProtoPart != null)
+            {
+                if (transmitterProtoPart.pVesselRef.vesselRef != null) return transmitterProtoPart.pVesselRef.vesselRef.mainBody;
+                return FlightGlobals.Bodies[transmitterProtoPart.pVesselRef.orbitSnapShot.ReferenceBodyIndex];
+            }
+            RefreshCacheTransmitter(transmitterId);
+
+            if (activeTransmitterCache.TryGetValue(transmitterId, out var transmitterModule2) && transmitterModule2 != null)
+            {
+                return transmitterModule2.Vessel.mainBody;
+            }
+            if (inactiveTransmitterCache.TryGetValue(transmitterId, out var transmitterProtoPart2) &&
+                transmitterProtoPart2 != null)
+            {
+                if (transmitterProtoPart2.pVesselRef.vesselRef != null) return transmitterProtoPart2.pVesselRef.vesselRef.mainBody;
+                return FlightGlobals.Bodies[transmitterProtoPart2.pVesselRef.orbitSnapShot.ReferenceBodyIndex];
             }
 
             return null;
@@ -190,7 +298,7 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
         #if DEBUG
         public void DebugDumpRegistryState()
         {
-            System.Text.StringBuilder sb = new System.Text.StringBuilder();
+            StringBuilder sb = new StringBuilder();
             sb.AppendLine("[URT] ==================== REGISTRY DEBUG DUMP ====================");
 
             sb.AppendLine($"[URT] --- TRANSMITTERS ({transmitterFlightIds.Count} Registered) ---");
@@ -259,7 +367,7 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
             sb.AppendLine($"[URT] --- ACTIVE LINKS DATABASE ({ActiveLinks.Count} Active Links) ---");
             foreach (var link in ActiveLinks)
             {
-                sb.AppendLine($"  Tx {link.Item1.TransmitterId} -> Rx {link.Item1.ReceiverId} | ReceivedPower: {link.Item2.ToString():F4}");
+                sb.AppendLine($"  Tx {link.Link.TransmitterId} -> Rx {link.Link.ReceiverId} | ReceivedPower: {link.ReceivedPower.ToString():F4}");
             }
 
             sb.AppendLine("[URT] =============================================================");

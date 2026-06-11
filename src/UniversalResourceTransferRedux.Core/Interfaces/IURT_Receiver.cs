@@ -11,7 +11,6 @@ namespace UniversalResourceTransferRedux.Core
     {
         int ModuleId { get; }
         int ReceiverId { get; }
-
         Vessel Vessel { get; }
 
         GenericUtils.ReceiverInfo GetReceiverInfo();

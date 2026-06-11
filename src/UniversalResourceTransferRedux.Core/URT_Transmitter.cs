@@ -19,37 +19,37 @@ namespace UniversalResourceTransferRedux.Core
 
         //Part properties
         [KSPField(isPersistant = true, guiActive = true)]
-        protected int transmitterID = -1;
+        public int transmitterID = -1;
 
-        [KSPField(isPersistant = true, guiActive = true)]
-        protected int transmitterModuleId;
+        [KSPField(isPersistant = false, guiActive = true)]
+        public int transmitterModuleId;
         [KSPField(isPersistant = false, guiActive = true, guiActiveEditor = true)]
-        protected float maxTransmittedPower = 10000;
+        public float maxTransmittedPower = 10000;
 
         [KSPField(isPersistant = false, guiActive = false)]
-        protected float transmitterDiameter;
-
-        [KSPField(isPersistant = true, guiActive = false)]
-        protected float transmitterWavelength;
+        public float transmitterDiameter;
 
         [KSPField(isPersistant = false, guiActive = false)]
-        protected float transmitterEfficiency;
+        public float transmitterWavelength;
 
         [KSPField(isPersistant = false, guiActive = false)]
-        protected string inputResource = "ElectricCharge";
+        public float transmitterEfficiency;
+
+        [KSPField(isPersistant = false, guiActive = false)]
+        public string inputResource = "ElectricCharge";
 
         // This is defined as "how many EC is one unit of inputResource worth"
         [KSPField(isPersistant = false, guiActive = false)]
-        protected float inputResourceEnergyFactor = 1.0f;
+        public float inputResourceEnergyFactor = 1.0f;
 
         [KSPField(isPersistant = false, guiActive = false)]
-        protected string resourceTypeTags = "EMRadiation";
+        public string resourceTypeTags = "EMRadiation";
 
         [KSPField(isPersistant = false, guiActive = false)]
-        protected float diffractionConstant = 1.22F;
+        public float diffractionConstant = 1.22F;
 
         [KSPField(isPersistant = true, guiActive = false)]
-        protected double lastUpdateTime;
+        public double lastUpdateTime;
 
         //Variables
         private URT_Registry registry;
@@ -59,28 +59,27 @@ namespace UniversalResourceTransferRedux.Core
         // User set variables
         [KSPField(isPersistant = true, guiActive = true, guiName = "Transmitting")]
         [UI_Toggle(affectSymCounterparts = UI_Scene.Editor, enabledText = "Transmission Active", disabledText = "Transmission Disabled")]
-        protected bool isTransmitting;
+        public bool isTransmitting;
 
         [KSPField(isPersistant = true, guiActive = true, guiName = "Max transmitted power")]
         [UI_FloatRange(affectSymCounterparts = UI_Scene.Editor, minValue = 0, maxValue = 1000, stepIncrement = 1)]
-        protected float maxTransmittedPowerGUI;
+        public float maxTransmittedPowerGUI;
 
         [KSPField(isPersistant = true, guiActive = true, guiName = "Reserve for active vessel")]
         [UI_Toggle(affectSymCounterparts = UI_Scene.Editor, enabledText = "Reserved for active vessel", disabledText = "Available for all receivers")]
-        protected bool isReservedForActive;
+        public bool isReservedForActive;
 
         [KSPField(isPersistant = true, guiActive = true, guiName = "Manual targeting?")]
         [UI_Toggle(affectSymCounterparts = UI_Scene.Editor, enabledText = "Manually targetting", disabledText = "Automatically targetting")]
-        protected bool isManuallyTargeting;
+        public bool isManuallyTargeting;
 
         //
         //      [KSPField(isPersistant = true, guiActive = true, guiName = "Manual transmission target")]
         //    [UI_Cycle(affectSymCounterparts = UI_Scene.Editor, stateNames = new string[1] { "No valid receivers" })]
         //  private int manualtargetReceiverId;
 
-        public override void OnStart(StartState state)
+        public void Start()
         {
-            base.OnStart(state);
             if (!HighLogic.LoadedSceneIsFlight) return;
             StartCoroutine(WaitForRegistry());
         }
@@ -205,14 +204,19 @@ namespace UniversalResourceTransferRedux.Core
 
         public TransmitterInfo GetTransmitterInfo()
         {
+#if DEBUG
+            Debug.Log($"[URT]: GetTransmitterInfo() called! Current module values: diameter: {transmitterDiameter}," +
+                $" wavelength: {transmitterWavelength}, efficiency: {transmitterEfficiency}, divergence constant: {diffractionConstant}, " +
+                $"maxTransmittedPower : {maxTransmittedPower}, resourceTypeTags: {resourceTypeTags.Split(';')}");
+
+#endif
             return new TransmitterInfo(
                 transmitterDiameter,
                 transmitterWavelength,
                 transmitterEfficiency,
                 maxTransmittedPower,
                 resourceTypeTags.Split(';'),
-                diffractionConstant
-            );
+                diffractionConstant);
         }
 
         private void OnTransmissionStateChanged(BaseField field, object obj)
