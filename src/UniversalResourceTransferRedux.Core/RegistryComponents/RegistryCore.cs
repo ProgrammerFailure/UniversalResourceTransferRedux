@@ -41,6 +41,7 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
         //Physics stuff
         public static readonly double RayleighCoefficient = 13.9E-31;
         public static readonly double MieCoefficient = 1.1E-13;
+        public static QuaternionD CurrentWorldToInertial { get; private set; } = QuaternionD.identity;
 
         private double time;
         [KSPField(isPersistant = true)]
@@ -70,6 +71,7 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
                     Destroy(this);
                 }
             }
+            time = Planetarium.GetUniversalTime();
             GameEvents.onPartDie.Add(OnPartDie);
             GameEvents.onVesselChange.Add(OnActiveVesselChanged);
             GameEvents.onVesselUnloaded.Add(OnVesselUnloaded);
@@ -85,7 +87,8 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
                     (body.Radius + body.atmosphereDepth) * (body.Radius + body.atmosphereDepth),
                     (body.sphereOfInfluence * body.sphereOfInfluence),
                     GenericUtils.CalculateBaseScaleHeight(body),
-                    body.atmDensityASL
+                    body.atmDensityASL,
+                    SCIPositionProvider.GetPosition(body, time)
                 ));
             }
             StartCoroutine(RunNetworkRebuild());
@@ -101,9 +104,19 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
             GameEvents.onVesselWillDestroy.Remove(OnVesselDestroyedOrRecovered);
             GameEvents.onVesselWasModified.Remove(OnVesselWasModified);
         }
-        public void FixedUpdate()
+        public void Update()
         {
             time = Planetarium.GetUniversalTime();
+            if (Planetarium.fetch != null)
+            {
+                CurrentWorldToInertial = QuaternionD.Inverse(Planetarium.fetch.rotation);
+            }
+            for (int i = 0; i < FlightGlobals.Bodies.Count; i++)
+            {
+                var bodyStruct = BodySquaredRadiiAndAtmoRadii[i];
+                bodyStruct.SCIPosition = SCIPositionProvider.GetPosition(FlightGlobals.Bodies[i], time);
+                BodySquaredRadiiAndAtmoRadii[i] = bodyStruct;
+            }
             URT_PowerCalculator.ProcessLinks(ActiveLinks,
                 transmitterCurrentMaxAmounts,
                 receiverReceivedAmounts,
@@ -170,20 +183,22 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
             OcclusionImpact = occlusionImpact;
         }
     }
-    internal readonly struct URT_BodyValues
+    internal struct URT_BodyValues
     {
         public readonly double SquaredBodyRadius;
         public readonly double SquaredBodyAtmoTotalRadius;
         public readonly double SquaredSOIRadius;
         public readonly double ScaleHeight;
         public readonly double ASLDensity;
-        public URT_BodyValues(double sqrRadius, double sqrAtmoRadius, double sqrSoiRadius, double scaleHeight, double aslDensity)
+        public Vector3d SCIPosition;
+        public URT_BodyValues(double sqrRadius, double sqrAtmoRadius, double sqrSoiRadius, double scaleHeight, double aslDensity, Vector3d sciPosition)
         {
             SquaredBodyRadius = sqrRadius;
             SquaredBodyAtmoTotalRadius = sqrAtmoRadius;
             SquaredSOIRadius = sqrSoiRadius;
             ScaleHeight = scaleHeight;
             ASLDensity = aslDensity;
+            SCIPosition = sciPosition;
         }
     }
 

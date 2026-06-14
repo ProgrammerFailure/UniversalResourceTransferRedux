@@ -115,24 +115,24 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
         {
             if (activeTransmitterCache.TryGetValue(transmitterId, out var transmitterModule) && transmitterModule != null)
             {
-                
-                return transmitterModule.Vessel.GetWorldPos3D();
+
+                return SCIPositionProvider.GetPosition(transmitterModule.Vessel, time, CurrentWorldToInertial);
             }
             if (inactiveTransmitterCache.TryGetValue(transmitterId, out var transmitterProtoPart) &&
                 transmitterProtoPart != null)
             {
-                return GenericUtils.GetProtoVesselWorldPosAtTime(transmitterProtoPart.pVesselRef, time);
+                return SCIPositionProvider.GetPosition(transmitterProtoPart.pVesselRef, time, CurrentWorldToInertial);
             }
             RefreshCacheTransmitter(transmitterId);
             
             if (activeTransmitterCache.TryGetValue(transmitterId, out var transmitterModule2) && transmitterModule2 != null)
             {
-                return transmitterModule2.Vessel.GetWorldPos3D();
+                return SCIPositionProvider.GetPosition(transmitterModule2.Vessel, time, CurrentWorldToInertial);
             }
             if (inactiveTransmitterCache.TryGetValue(transmitterId, out var transmitterProtoPart2) &&
                 transmitterProtoPart2 != null)
             {
-                return GenericUtils.GetProtoVesselWorldPosAtTime(transmitterProtoPart2.pVesselRef, time);
+                return SCIPositionProvider.GetPosition(transmitterProtoPart2.pVesselRef, time, CurrentWorldToInertial);
             }
 
             return null;
@@ -142,23 +142,23 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
         {
             if (activeReceiverCache.TryGetValue(receiverID, out var receiverModule) && receiverModule != null)
             {
-                return receiverModule.Vessel.GetWorldPos3D();
+                return SCIPositionProvider.GetPosition(receiverModule.Vessel, time, CurrentWorldToInertial);
             }
             if (inactiveReceiverCache.TryGetValue(receiverID, out var receiverProtoPart) &&
                 receiverProtoPart != null)
             {
-                return GenericUtils.GetProtoVesselWorldPosAtTime(receiverProtoPart.pVesselRef, time);
+                return SCIPositionProvider.GetPosition(receiverProtoPart.pVesselRef, time, CurrentWorldToInertial);
             }
             RefreshCacheReceiver(receiverID);
 
             if (activeReceiverCache.TryGetValue(receiverID, out var receiverModule2) && receiverModule2 != null)
             {
-                return receiverModule2.Vessel.GetWorldPos3D();
+                return SCIPositionProvider.GetPosition(receiverModule2.Vessel, time, CurrentWorldToInertial);
             }
             if (inactiveReceiverCache.TryGetValue(receiverID, out var receiverProtoPart2) &&
                 receiverProtoPart2 != null)
             {
-                return GenericUtils.GetProtoVesselWorldPosAtTime(receiverProtoPart2.pVesselRef, time);
+                return SCIPositionProvider.GetPosition(receiverProtoPart2.pVesselRef, time, CurrentWorldToInertial);
             }
 
             return null;

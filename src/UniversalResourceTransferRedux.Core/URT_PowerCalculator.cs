@@ -121,37 +121,26 @@ namespace UniversalResourceTransferRedux.Core
             CelestialBody lowestSharedParent,
             double atmoAttenuationCoeff)
         {
-            var dists = SqrDistSegmentAndLine(a, b, lowestSharedParent.position);
+            var dists = SqrDistSegmentAndLine(a, b, URT_Registry.BodySquaredRadiiAndAtmoRadii[lowestSharedParent.flightGlobalsIndex].SCIPosition);
             return OcclusionImpact(a, b, lowestSharedParent, dists.Item1, dists.Item2, atmoAttenuationCoeff);
         }
+
         private static double OcclusionImpact(
-    Vector3d a,
-    Vector3d b,
-    CelestialBody lowestSharedParent,
-    double sqrDistSegment,
-    double sqrDistLine,
-    double atmoAttenuationCoeff
-)
+            Vector3d a,
+            Vector3d b,
+            CelestialBody lowestSharedParent,
+            double sqrDistSegment,
+            double sqrDistLine,
+            double atmoAttenuationCoeff
+        )    
         {
             var registryBodyData = URT_Registry.BodySquaredRadiiAndAtmoRadii[lowestSharedParent.flightGlobalsIndex];
-            Vector3d planetPos = lowestSharedParent.position;
+            Vector3d planetPos = registryBodyData.SCIPosition;
             Vector3d beamVec = b - a;
 
             // Determine if the closest approach of the infinite line lies physically between the two vessels
             bool isPlanetBetween = Vector3d.Dot(a - planetPos, beamVec) * Vector3d.Dot(b - planetPos, beamVec) < 0;
-            /*
-#if DEBUG
-            if (lowestSharedParent.name == "Kerbin")
-            {
-                double realDist = Math.Sqrt(sqrDistLine);
-                UnityEngine.Debug.Log($"[URT] Occlusion Test: Planet={lowestSharedParent.name}, " +
-                                      $"txPos={a}, rxPos={b}, planetPos={planetPos}, " +
-                                      $"d_min={realDist:F1}m, Radius={lowestSharedParent.Radius:F1}m, " +
-                                      $"isBetween={isPlanetBetween}, sqrDistLine={sqrDistLine:F1}, " +
-                                      $"limit={registryBodyData.SquaredBodyRadius:F1}");
-            }
-#endif
-*/
+
             if (isPlanetBetween && sqrDistLine <= registryBodyData.SquaredBodyRadius)
             {
                 return 0;
@@ -175,13 +164,14 @@ namespace UniversalResourceTransferRedux.Core
 
             foreach (var body in lowestSharedParent.orbitingBodies)
             {
-                var dists = SqrDistSegmentAndLine(a, b, body.position);
-                var tempSquaredDistToBody = dists.Item1;
                 var tempRegistryBodyData = URT_Registry.BodySquaredRadiiAndAtmoRadii[body.flightGlobalsIndex];
+                var dists = SqrDistSegmentAndLine(a, b, tempRegistryBodyData.SCIPosition);
+                var tempSquaredDistToBody = dists.Item1;
+                
 
                 if (body.orbitingBodies.Count == 0)
                 {
-                    Vector3d childPos = body.position;
+                    Vector3d childPos = tempRegistryBodyData.SCIPosition;
                     bool isChildBetween = Vector3d.Dot(a - childPos, beamVec) * Vector3d.Dot(b - childPos, beamVec) < 0;
 
                     if (isChildBetween && dists.Item2 <= tempRegistryBodyData.SquaredBodyRadius) return 0.0;
@@ -247,8 +237,8 @@ namespace UniversalResourceTransferRedux.Core
             double altitude = Math.Sqrt(minSqrDistSegment) - body.Radius;
             double rho_hmin = GetDensityAtAltitude(altitude, bodyData.ASLDensity, bodyData.ScaleHeight);
             var columnDensity = CalculateColumnDensity(
-                a - body.position,
-                b - body.position,
+                a - bodyData.SCIPosition,
+                b - bodyData.SCIPosition,
                 bodyData.ScaleHeight,
                 rho_hmin,
                 minSqrDistLine,
