@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Changed
 - [API] Deprecated `transmitterID` and `receiverId`. Implementation of `IURT_Receiver` and `IURT_Transmitter` will now suffice, as long as persistence is handled.
-
+- [Internal] Transitioned to a sun centered inertial frame for all positions
 ## 0.1.0 - 2026-06-11
 
 There is nothing permanent except change
