@@ -240,14 +240,14 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
 
             if (inactiveReceiverCache.TryGetValue(receiverId, out var receiverProtoPart) &&
                 receiverProtoPart != null &&
-                receiverProtoPart.modules.Find(s => URT_AssemblyScanner.CompatibleReceivers.Contains(s.moduleName) &&
-                s.moduleValues.GetInt("receiverId") == receiverId) != null)
+                receiverProtoPart.partPrefab.FindModulesImplementing<IURT_Receiver>()
+                .Find(s => s.ModuleId == receiverModuleIds[receiverId]) != null)
             {
                 return;
             }
             if (FlightGlobals.FindProtoPartByID(receiverFlightIds[receiverId]) is ProtoPartSnapshot receiverFoundProtoPart &&
-                receiverFoundProtoPart.modules.Find(s => URT_AssemblyScanner.CompatibleReceivers.Contains(s.moduleName) &&
-                s.moduleValues.GetInt("receiverId") == receiverId) != null)
+                receiverFoundProtoPart.partPrefab.FindModulesImplementing<IURT_Receiver>()
+                .Find(s => s.ModuleId == receiverModuleIds[receiverId]) != null)
             {
                 inactiveReceiverCache[receiverId] = receiverFoundProtoPart;
                 return;
@@ -275,19 +275,15 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
 
             if (inactiveTransmitterCache.TryGetValue(transmitterId, out var transmitterProtoPart) &&
                 transmitterProtoPart != null &&
-                transmitterProtoPart.modules.Find(s =>
-                URT_AssemblyScanner.CompatibleTransmitters.Contains(s.moduleName) &&
-                s.moduleValues.GetInt("transmitterID") == transmitterId
-                ) != null)
+                transmitterProtoPart.partPrefab.FindModulesImplementing<IURT_Transmitter>()
+                .Find(s => s.ModuleID == transmitterModuleIds[transmitterId]) != null)
             {
                 inactiveTransmitterCache[transmitterId] = transmitterProtoPart;
                 return;
             }
             if (FlightGlobals.FindProtoPartByID(transmitterFlightIds[transmitterId]) is ProtoPartSnapshot transmitterFoundProtoPart &&
-                transmitterFoundProtoPart.modules.Find(s =>
-                URT_AssemblyScanner.CompatibleTransmitters.Contains(s.moduleName) &&
-                s.moduleValues.GetInt("transmitterID") == transmitterId
-                ) != null)
+                transmitterFoundProtoPart.partPrefab.FindModulesImplementing<IURT_Transmitter>()
+                .Find(s => s.ModuleID == transmitterModuleIds[transmitterId]) != null)
             {
                 inactiveTransmitterCache[transmitterId] = transmitterFoundProtoPart;
                 return;
