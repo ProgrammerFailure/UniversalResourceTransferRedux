@@ -1,4 +1,4 @@
-﻿using CommNet.Network;
+using CommNet.Network;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -285,10 +285,19 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
             {
                 throw new InvalidDataException("txInfo did not have a value!");
             }
-            if (GetTransmitterWorldPos(transmitterId) == GetReceiverWorldPos(receiverId))
+            var transmitterPos = GetTransmitterWorldPos(transmitterId);
+            var receiverPos = GetReceiverWorldPos(receiverId);
+            if (!transmitterPos.HasValue || !receiverPos.HasValue)
             {
 #if DEBUG
-                Debug.Log("[URT] Transmitter and receiver returned the same position during link consideration!");
+                Debug.Log("[URT] Transmitter and/or receiver returned no position!");
+#endif
+                return null; //No vessel
+            }
+            if ((transmitterPos.Value - receiverPos.Value).magnitude <= 0.5)
+            {
+#if DEBUG
+                Debug.Log("[URT] Transmitter and receiver returned same position!");
 #endif
                 return null; //Same vessel
             }
@@ -296,8 +305,10 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
             var receiverInfo = rxInfo.Value;
             if (!transmitterInfo.ResourceTypeTags.Intersect(receiverInfo.ResourceTypeTags).Any())
             {
+#if DEBUG
                 Debug.Log("[URT] Invalid Link. Discarding.");
                 Debug.Log("[URT]: Issue - transmitter and receiver shared no resource type tags");
+#endif
                 return null;
             }
             var efficiency = URT_PowerCalculator.CalculateConstantLinkFactor(transmitterInfo, receiverInfo);
@@ -309,9 +320,11 @@ namespace UniversalResourceTransferRedux.Core.RegistryComponents
                 return new URT_Link(transmitterId, receiverId, efficiency.Item1, maxDistanceSquared, efficiency.Item2, mie + rayleigh);
             }
             else
+#if DEBUG
             Debug.Log("[URT] URT_Registry.CreateLink: Invalid link. Discarding");
             Debug.Log($"[URT] Link information: tID: {transmitterId}, rID: {receiverId}, efficiency: {efficiency}, maxDistanceSquared: {maxDistanceSquared}");
             Debug.Log($"[URT] Link constituents' information: {transmitterInfo.ToString()}, {receiverInfo.ToString()}");
+#endif
             return null;
         }
     }
